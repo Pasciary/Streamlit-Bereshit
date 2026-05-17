@@ -1,6 +1,8 @@
 import streamlit as st
 from gui.telas import login
 
+
+
 st.set_page_config(
     page_title="Bereshit",
     page_icon="⚔️",
@@ -26,6 +28,12 @@ with st.sidebar:
     
     if st.button("📜 Fichas", use_container_width=True):
         st.session_state.tela = "fichas"
+        st.rerun()
+
+    st.divider()
+
+    if st.button("🚪 Sair", use_container_width=True):
+        st.session_state.clear()
         st.rerun()
 
 tela = st.session_state.tela
