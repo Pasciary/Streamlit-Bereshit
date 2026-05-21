@@ -1,0 +1,314 @@
+import streamlit as st
+from config import api
+
+CLASSES = ["Guerreiro", "Mago", "Ladino", "Clerigo", "Bardo", "Druida", "Paladino", "Ranger", "Monge", "Feiticeiro"]
+RACAS = ["Humano", "Elfo", "Anao", "Halfling", "Gnomo", "Meio-Elfo", "Meio-Orc", "Tiefling", "Draconato"]
+ATRIBUTOS = ["forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma"]
+LABELS = {
+    "forca": "Força",
+    "destreza": "Destreza",
+    "constituicao": "Constituição",
+    "inteligencia": "Inteligência",
+    "sabedoria": "Sabedoria",
+    "carisma": "Carisma",
+}
+
+
+def mostrar():
+    if "ficha_modo" not in st.session_state:
+        st.session_state.ficha_modo = "lista"
+    if "ficha_selecionada" not in st.session_state:
+        st.session_state.ficha_selecionada = None
+
+    modo = st.session_state.ficha_modo
+    if modo == "lista":
+        _tela_lista()
+    elif modo == "ver":
+        _tela_ver()
+    elif modo == "criar":
+        _tela_criar()
+    elif modo == "editar":
+        _tela_editar()
+
+
+def _ir_para(modo: str, ficha_id: int | None = None):
+    st.session_state.ficha_modo = modo
+    st.session_state.ficha_selecionada = ficha_id
+
+
+# ── Lista ────────────────────────────────────────────────────────────────────
+
+def _tela_lista():
+    usuario = st.session_state.usuario
+    role = st.session_state.role
+
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.title("Fichas de Personagem")
+    with col2:
+        if role == "jogador":
+            if st.button("+ Nova Ficha", use_container_width=True, type="primary"):
+                _ir_para("criar")
+                st.rerun()
+
+    fichas = api.get_fichas(usuario, role)
+
+    if not fichas:
+        msg = "Nenhuma ficha cadastrada ainda."
+        if role == "jogador":
+            msg += " Crie sua primeira ficha!"
+        st.info(msg)
+        return
+
+    if role == "mestre":
+        jogadores = sorted({f["jogador"] for f in fichas})
+        filtro = st.selectbox("Filtrar por jogador", ["Todos"] + jogadores, label_visibility="collapsed")
+        if filtro != "Todos":
+            fichas = [f for f in fichas if f["jogador"] == filtro]
+
+    for ficha in fichas:
+        _linha_ficha(ficha, role)
+
+
+def _linha_ficha(ficha: dict, role: str):
+    with st.container(border=True):
+        col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+        with col1:
+            st.markdown(f"**{ficha['nome']}**")
+            info = f"{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}"
+            if role == "mestre":
+                info += f" · 👤 {ficha['jogador']}"
+            st.caption(info)
+        with col2:
+            hp_pct = ficha["hp_atual"] / ficha["hp_max"] if ficha["hp_max"] > 0 else 0
+            st.progress(min(hp_pct, 1.0), text=f"HP {ficha['hp_atual']}/{ficha['hp_max']}")
+        with col3:
+            mp_pct = ficha["mp_atual"] / ficha["mp_max"] if ficha["mp_max"] > 0 else 0
+            st.progress(min(mp_pct, 1.0), text=f"MP {ficha['mp_atual']}/{ficha['mp_max']}")
+        with col4:
+            if st.button("Ver", key=f"ver_{ficha['id']}", use_container_width=True):
+                _ir_para("ver", ficha["id"])
+                st.rerun()
+
+
+# ── Ver ──────────────────────────────────────────────────────────────────────
+
+def _tela_ver():
+    ficha_id = st.session_state.ficha_selecionada
+    ficha = api.get_ficha(ficha_id)
+    role = st.session_state.role
+    usuario = st.session_state.usuario
+
+    if not ficha:
+        st.error("Ficha não encontrada.")
+        _ir_para("lista")
+        st.rerun()
+        return
+
+    col_back, col_titulo = st.columns([1, 7])
+    with col_back:
+        if st.button("← Voltar"):
+            _ir_para("lista")
+            st.rerun()
+    with col_titulo:
+        st.title(ficha["nome"])
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Classe", ficha["classe"])
+    with col2:
+        st.metric("Raça", ficha["raca"])
+    with col3:
+        st.metric("Nível", ficha["nivel"])
+
+    col1, col2 = st.columns(2)
+    with col1:
+        hp_pct = ficha["hp_atual"] / ficha["hp_max"] if ficha["hp_max"] > 0 else 0
+        st.progress(min(hp_pct, 1.0))
+        st.metric("HP", f"{ficha['hp_atual']} / {ficha['hp_max']}")
+    with col2:
+        mp_pct = ficha["mp_atual"] / ficha["mp_max"] if ficha["mp_max"] > 0 else 0
+        st.progress(min(mp_pct, 1.0))
+        st.metric("MP", f"{ficha['mp_atual']} / {ficha['mp_max']}")
+
+    st.divider()
+    st.subheader("Atributos")
+    cols = st.columns(6)
+    for i, attr in enumerate(ATRIBUTOS):
+        with cols[i]:
+            val = ficha["atributos"][attr]
+            mod = (val - 10) // 2
+            sinal = "+" if mod >= 0 else ""
+            st.metric(LABELS[attr], val, delta=f"{sinal}{mod}", delta_color="off")
+
+    st.divider()
+    st.subheader("História")
+    st.write(ficha["historia"] or "—")
+
+    pode_editar = role == "mestre" or ficha["jogador"] == usuario
+    if pode_editar:
+        st.divider()
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Editar Ficha", use_container_width=True, type="primary"):
+                _ir_para("editar", ficha_id)
+                st.rerun()
+        with col2:
+            if role == "mestre":
+                if st.button("Excluir Ficha", use_container_width=True):
+                    res = api.deletar_ficha(ficha_id)
+                    if "ok" in res:
+                        st.success("Ficha excluída.")
+                        _ir_para("lista")
+                        st.rerun()
+                    else:
+                        st.error(res.get("erro"))
+
+
+# ── Criar ────────────────────────────────────────────────────────────────────
+
+def _tela_criar():
+    col_back, col_titulo = st.columns([1, 7])
+    with col_back:
+        if st.button("← Voltar"):
+            _ir_para("lista")
+            st.rerun()
+    with col_titulo:
+        st.title("Nova Ficha")
+
+    usuario = st.session_state.usuario
+
+    with st.form("form_criar_ficha"):
+        nome = st.text_input("Nome do Personagem")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            classe = st.selectbox("Classe", CLASSES)
+        with col2:
+            raca = st.selectbox("Raça", RACAS)
+        with col3:
+            nivel = st.number_input("Nível", min_value=1, max_value=20, value=1)
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            hp_max = st.number_input("HP Máximo", min_value=1, value=10)
+        with col2:
+            hp_atual = st.number_input("HP Atual", min_value=0, value=10)
+        with col3:
+            mp_max = st.number_input("MP Máximo", min_value=0, value=10)
+        with col4:
+            mp_atual = st.number_input("MP Atual", min_value=0, value=10)
+
+        st.subheader("Atributos")
+        cols = st.columns(6)
+        atributos = {}
+        for i, attr in enumerate(ATRIBUTOS):
+            with cols[i]:
+                atributos[attr] = st.number_input(LABELS[attr], min_value=1, max_value=20, value=10, key=f"c_{attr}")
+
+        historia = st.text_area("História do Personagem", height=150)
+        submit = st.form_submit_button("Criar Ficha", use_container_width=True, type="primary")
+
+    if submit:
+        if not nome:
+            st.error("Informe o nome do personagem!")
+            return
+        res = api.criar_ficha({
+            "nome": nome,
+            "jogador": usuario,
+            "classe": classe,
+            "raca": raca,
+            "nivel": nivel,
+            "hp_atual": hp_atual,
+            "hp_max": hp_max,
+            "mp_atual": mp_atual,
+            "mp_max": mp_max,
+            "atributos": atributos,
+            "historia": historia,
+        })
+        if "ok" in res:
+            st.success("Ficha criada com sucesso!")
+            _ir_para("ver", res["ficha"]["id"])
+            st.rerun()
+        else:
+            st.error(res.get("erro", "Erro ao criar ficha."))
+
+
+# ── Editar ───────────────────────────────────────────────────────────────────
+
+def _tela_editar():
+    ficha_id = st.session_state.ficha_selecionada
+    ficha = api.get_ficha(ficha_id)
+
+    if not ficha:
+        st.error("Ficha não encontrada.")
+        _ir_para("lista")
+        st.rerun()
+        return
+
+    col_back, col_titulo = st.columns([1, 7])
+    with col_back:
+        if st.button("← Voltar"):
+            _ir_para("ver", ficha_id)
+            st.rerun()
+    with col_titulo:
+        st.title(f"Editando: {ficha['nome']}")
+
+    with st.form("form_editar_ficha"):
+        nome = st.text_input("Nome do Personagem", value=ficha["nome"])
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            idx_classe = CLASSES.index(ficha["classe"]) if ficha["classe"] in CLASSES else 0
+            classe = st.selectbox("Classe", CLASSES, index=idx_classe)
+        with col2:
+            idx_raca = RACAS.index(ficha["raca"]) if ficha["raca"] in RACAS else 0
+            raca = st.selectbox("Raça", RACAS, index=idx_raca)
+        with col3:
+            nivel = st.number_input("Nível", min_value=1, max_value=20, value=ficha["nivel"])
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            hp_max = st.number_input("HP Máximo", min_value=1, value=ficha["hp_max"])
+        with col2:
+            hp_atual = st.number_input("HP Atual", min_value=0, value=ficha["hp_atual"])
+        with col3:
+            mp_max = st.number_input("MP Máximo", min_value=0, value=ficha["mp_max"])
+        with col4:
+            mp_atual = st.number_input("MP Atual", min_value=0, value=ficha["mp_atual"])
+
+        st.subheader("Atributos")
+        cols = st.columns(6)
+        atributos = {}
+        for i, attr in enumerate(ATRIBUTOS):
+            with cols[i]:
+                atributos[attr] = st.number_input(
+                    LABELS[attr], min_value=1, max_value=20,
+                    value=ficha["atributos"][attr], key=f"e_{attr}"
+                )
+
+        historia = st.text_area("História do Personagem", value=ficha["historia"], height=150)
+        submit = st.form_submit_button("Salvar Alterações", use_container_width=True, type="primary")
+
+    if submit:
+        if not nome:
+            st.error("Informe o nome do personagem!")
+            return
+        res = api.atualizar_ficha(ficha_id, {
+            "nome": nome,
+            "classe": classe,
+            "raca": raca,
+            "nivel": nivel,
+            "hp_atual": hp_atual,
+            "hp_max": hp_max,
+            "mp_atual": mp_atual,
+            "mp_max": mp_max,
+            "atributos": atributos,
+            "historia": historia,
+        })
+        if "ok" in res:
+            st.success("Ficha atualizada!")
+            _ir_para("ver", ficha_id)
+            st.rerun()
+        else:
+            st.error(res.get("erro", "Erro ao atualizar ficha."))

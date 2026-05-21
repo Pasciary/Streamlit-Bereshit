@@ -1,6 +1,5 @@
 import streamlit as st
-from gui.telas import login
-
+from gui.telas import login, dashboard, fichas
 
 
 st.set_page_config(
@@ -20,12 +19,15 @@ if "tela" not in st.session_state:
     st.session_state.tela = "dashboard"
 
 with st.sidebar:
-    st.title("Bereshit")
-    
+    st.title("⚔️ Bereshit")
+    st.caption(f"👤 {st.session_state.usuario} · {st.session_state.role}")
+
+    st.divider()
+
     if st.button("📊 Dashboard", use_container_width=True):
         st.session_state.tela = "dashboard"
         st.rerun()
-    
+
     if st.button("📜 Fichas", use_container_width=True):
         st.session_state.tela = "fichas"
         st.rerun()
@@ -39,8 +41,8 @@ with st.sidebar:
 tela = st.session_state.tela
 
 if tela == "dashboard":
-    st.write("você está no dashboard")
+    dashboard.mostrar()
 elif tela == "fichas":
-    st.write("você está nas fichas")
+    fichas.mostrar()
 else:
-    st.write(f"tela '{tela}' não existe ainda")
+    st.error(f"Tela '{tela}' não encontrada.")
