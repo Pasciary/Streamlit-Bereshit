@@ -1,12 +1,28 @@
-import streamlit as st
-from gui.telas import login, dashboard, fichas
+import logging
 
+import streamlit as st
+
+from gui import db
+from gui.telas import dashboard, fichas, login
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 st.set_page_config(
     page_title="Bereshit",
     page_icon="⚔️",
     layout="wide",
 )
+
+
+@st.cache_resource
+def _init_db() -> None:
+    db.init_db()
+
+
+_init_db()
 
 if "logado" not in st.session_state:
     st.session_state.logado = False

@@ -1,8 +1,11 @@
 import streamlit as st
+
 from config import api
+from gui.utils import calc_pct
 
 
-def mostrar():
+def mostrar() -> None:
+    """Render the dashboard screen for the current user."""
     usuario = st.session_state.usuario
     role = st.session_state.role
     dados = api.get_dashboard(usuario, role)
@@ -13,7 +16,8 @@ def mostrar():
         _dashboard_jogador(usuario, dados)
 
 
-def _dashboard_mestre(dados):
+def _dashboard_mestre(dados: dict) -> None:
+    """Render the master dashboard with aggregate metrics and per-player fichas."""
     st.title("Painel do Mestre")
 
     col1, col2, col3 = st.columns(3)
@@ -41,7 +45,8 @@ def _dashboard_mestre(dados):
                 _card_ficha(ficha)
 
 
-def _dashboard_jogador(usuario: str, dados: dict):
+def _dashboard_jogador(usuario: str, dados: dict) -> None:
+    """Render the player dashboard with their own fichas."""
     st.title(f"Bem-vindo, {usuario}!")
 
     col1, col2 = st.columns(2)
@@ -61,15 +66,20 @@ def _dashboard_jogador(usuario: str, dados: dict):
         _card_ficha(ficha)
 
 
-def _card_ficha(ficha: dict):
+def _card_ficha(ficha: dict) -> None:
+    """Render a compact ficha card with HP/MP progress bars."""
     with st.container(border=True):
         col1, col2, col3 = st.columns([3, 2, 2])
         with col1:
             st.markdown(f"**{ficha['nome']}**")
             st.caption(f"{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}")
         with col2:
-            hp_pct = ficha["hp_atual"] / ficha["hp_max"] if ficha["hp_max"] > 0 else 0
-            st.progress(min(hp_pct, 1.0), text=f"HP {ficha['hp_atual']}/{ficha['hp_max']}")
+            st.progress(
+                calc_pct(ficha["hp_atual"], ficha["hp_max"]),
+                text=f"HP {ficha['hp_atual']}/{ficha['hp_max']}",
+            )
         with col3:
-            mp_pct = ficha["mp_atual"] / ficha["mp_max"] if ficha["mp_max"] > 0 else 0
-            st.progress(min(mp_pct, 1.0), text=f"MP {ficha['mp_atual']}/{ficha['mp_max']}")
+            st.progress(
+                calc_pct(ficha["mp_atual"], ficha["mp_max"]),
+                text=f"MP {ficha['mp_atual']}/{ficha['mp_max']}",
+            )
