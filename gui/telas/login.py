@@ -1,7 +1,10 @@
 import streamlit as st
+
 from config import api
 
-def mostrar():
+
+def mostrar() -> None:
+    """Render the login screen and set session state on success."""
     _, col, _ = st.columns([1, 1.4, 1])
 
     with col:

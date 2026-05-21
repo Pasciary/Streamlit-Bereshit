@@ -1,123 +1,76 @@
-USUARIOS = {
-    "mestre": {"senha": "01234", "role": "mestre"},
-    "jogador1": {"senha": "1234", "role": "jogador"},
-    "jogador2": {"senha": "1234", "role": "jogador"},
+"""Mock API layer with bcrypt password verification and SQLite persistence."""
+import logging
+
+import bcrypt
+
+from gui import db
+
+logger = logging.getLogger(__name__)
+
+# Hashes pre-computados com bcrypt.hashpw(senha.encode(), bcrypt.gensalt())
+# Senhas originais: mestre="01234", jogador1/jogador2="1234"
+_USUARIOS: dict[str, dict] = {
+    "mestre": {
+        "senha_hash": "$2b$12$rJ5PLuGVsoXQ3OrK0G5gOuDOu3/oz6nctkq0Z2GXANi2hFyCdorWq",
+        "role": "mestre",
+    },
+    "jogador1": {
+        "senha_hash": "$2b$12$3JfWByMwK58x6OWoDUCB5.2aUyZk05Vosb1oNBquJMMbqKyhtTEqe",
+        "role": "jogador",
+    },
+    "jogador2": {
+        "senha_hash": "$2b$12$3JfWByMwK58x6OWoDUCB5.2aUyZk05Vosb1oNBquJMMbqKyhtTEqe",
+        "role": "jogador",
+    },
 }
-
-_FICHAS = [
-    {
-        "id": 1,
-        "nome": "Aldric Ferrovenas",
-        "jogador": "jogador1",
-        "classe": "Guerreiro",
-        "raca": "Humano",
-        "nivel": 5,
-        "hp_atual": 45,
-        "hp_max": 52,
-        "mp_atual": 10,
-        "mp_max": 10,
-        "atributos": {
-            "forca": 16,
-            "destreza": 12,
-            "constituicao": 14,
-            "inteligencia": 10,
-            "sabedoria": 8,
-            "carisma": 11,
-        },
-        "historia": "Nascido em uma família de ferreiros, Aldric descobriu seu talento para o combate após defender sua aldeia de um ataque de goblins. Desde então percorre o mundo em busca de desafios dignos de sua lâmina.",
-        "status": "ativa",
-    },
-    {
-        "id": 2,
-        "nome": "Lyra Sussurro-das-Sombras",
-        "jogador": "jogador1",
-        "classe": "Ladino",
-        "raca": "Elfa",
-        "nivel": 3,
-        "hp_atual": 22,
-        "hp_max": 28,
-        "mp_atual": 15,
-        "mp_max": 15,
-        "atributos": {
-            "forca": 10,
-            "destreza": 18,
-            "constituicao": 12,
-            "inteligencia": 14,
-            "sabedoria": 13,
-            "carisma": 15,
-        },
-        "historia": "Espiã élfica a serviço de uma guilda secreta, Lyra carrega segredos que poderiam mudar o destino de reinos inteiros. Ninguém sabe ao certo a quem ela serve de verdade.",
-        "status": "ativa",
-    },
-    {
-        "id": 3,
-        "nome": "Brom Martelo-de-Pedra",
-        "jogador": "jogador2",
-        "classe": "Clerigo",
-        "raca": "Anao",
-        "nivel": 4,
-        "hp_atual": 38,
-        "hp_max": 42,
-        "mp_atual": 20,
-        "mp_max": 30,
-        "atributos": {
-            "forca": 14,
-            "destreza": 9,
-            "constituicao": 16,
-            "inteligencia": 12,
-            "sabedoria": 18,
-            "carisma": 10,
-        },
-        "historia": "Sacerdote anão dedicado ao deus da forja, Brom busca recuperar um artefato sagrado roubado de seu templo há séculos. Sua fé é inabalável, mas seu temperamento, nem tanto.",
-        "status": "ativa",
-    },
-]
-
-_next_id = 4
 
 
 def login(usuario: str, senha: str) -> dict:
-    u = USUARIOS.get(usuario)
-    if not u or u["senha"] != senha:
+    """Authenticate a user. Returns session data on success or an error dict."""
+    u = _USUARIOS.get(usuario)
+    if not u or not bcrypt.checkpw(senha.encode(), u["senha_hash"].encode()):
+        logger.warning("Tentativa de login inválida para usuário: %s", usuario)
         return {"erro": "Usuário ou senha inválidos"}
+    logger.info("Login bem-sucedido: %s (%s)", usuario, u["role"])
     return {"ok": True, "usuario": usuario, "role": u["role"]}
 
 
-def get_fichas(usuario: str, role: str) -> list:
-    if role == "mestre":
-        return list(_FICHAS)
-    return [f for f in _FICHAS if f["jogador"] == usuario]
+def get_fichas(usuario: str, role: str) -> list[dict]:
+    """Return all fichas for mestre, or only the user's fichas for jogador."""
+    return db.fetch_fichas(usuario, role)
 
 
 def get_ficha(ficha_id: int) -> dict | None:
-    return next((f for f in _FICHAS if f["id"] == ficha_id), None)
+    """Return a single ficha by ID, or None if not found."""
+    return db.fetch_ficha(ficha_id)
 
 
 def criar_ficha(dados: dict) -> dict:
-    global _next_id
-    ficha = {**dados, "id": _next_id, "status": "ativa"}
-    _next_id += 1
-    _FICHAS.append(ficha)
+    """Create a new ficha and return it."""
+    ficha = db.insert_ficha(dados)
+    logger.info("Ficha criada: id=%s nome=%s", ficha["id"], ficha["nome"])
     return {"ok": True, "ficha": ficha}
 
 
 def atualizar_ficha(ficha_id: int, dados: dict) -> dict:
-    ficha = get_ficha(ficha_id)
+    """Update an existing ficha and return it, or an error dict if not found."""
+    ficha = db.update_ficha(ficha_id, dados)
     if not ficha:
         return {"erro": "Ficha não encontrada"}
-    ficha.update(dados)
+    logger.info("Ficha atualizada: id=%s", ficha_id)
     return {"ok": True, "ficha": ficha}
 
 
 def deletar_ficha(ficha_id: int) -> dict:
-    for i, f in enumerate(_FICHAS):
-        if f["id"] == ficha_id:
-            _FICHAS.pop(i)
-            return {"ok": True}
-    return {"erro": "Ficha não encontrada"}
+    """Delete a ficha by ID."""
+    if not db.delete_ficha(ficha_id):
+        return {"erro": "Ficha não encontrada"}
+    logger.info("Ficha deletada: id=%s", ficha_id)
+    return {"ok": True}
 
 
 def get_dashboard(usuario: str, role: str) -> dict:
+    """Return aggregated dashboard data for the given user."""
     fichas = get_fichas(usuario, role)
     jogadores = sorted({f["jogador"] for f in fichas})
     return {

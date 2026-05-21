@@ -1,10 +1,18 @@
 import streamlit as st
-from config import api
 
-CLASSES = ["Guerreiro", "Mago", "Ladino", "Clerigo", "Bardo", "Druida", "Paladino", "Ranger", "Monge", "Feiticeiro"]
-RACAS = ["Humano", "Elfo", "Anao", "Halfling", "Gnomo", "Meio-Elfo", "Meio-Orc", "Tiefling", "Draconato"]
+from config import api
+from gui.utils import calc_pct
+
+CLASSES = [
+    "Guerreiro", "Mago", "Ladino", "Clerigo", "Bardo",
+    "Druida", "Paladino", "Ranger", "Monge", "Feiticeiro",
+]
+RACAS = [
+    "Humano", "Elfo", "Anao", "Halfling", "Gnomo",
+    "Meio-Elfo", "Meio-Orc", "Tiefling", "Draconato",
+]
 ATRIBUTOS = ["forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma"]
-LABELS = {
+LABELS: dict[str, str] = {
     "forca": "Força",
     "destreza": "Destreza",
     "constituicao": "Constituição",
@@ -14,7 +22,8 @@ LABELS = {
 }
 
 
-def mostrar():
+def mostrar() -> None:
+    """Route to the correct ficha sub-screen based on session state."""
     if "ficha_modo" not in st.session_state:
         st.session_state.ficha_modo = "lista"
     if "ficha_selecionada" not in st.session_state:
@@ -31,14 +40,26 @@ def mostrar():
         _tela_editar()
 
 
-def _ir_para(modo: str, ficha_id: int | None = None):
+def _ir_para(modo: str, ficha_id: int | None = None) -> None:
+    """Update session state to navigate to another ficha sub-screen."""
     st.session_state.ficha_modo = modo
     st.session_state.ficha_selecionada = ficha_id
 
 
+def _validar_recursos(hp_atual: int, hp_max: int, mp_atual: int, mp_max: int) -> list[str]:
+    """Return a list of validation error messages for HP/MP values."""
+    erros: list[str] = []
+    if hp_atual > hp_max:
+        erros.append("HP atual não pode ser maior que HP máximo.")
+    if mp_atual > mp_max:
+        erros.append("MP atual não pode ser maior que MP máximo.")
+    return erros
+
+
 # ── Lista ────────────────────────────────────────────────────────────────────
 
-def _tela_lista():
+def _tela_lista() -> None:
+    """Render the ficha list with optional player filter for mestre."""
     usuario = st.session_state.usuario
     role = st.session_state.role
 
@@ -62,7 +83,9 @@ def _tela_lista():
 
     if role == "mestre":
         jogadores = sorted({f["jogador"] for f in fichas})
-        filtro = st.selectbox("Filtrar por jogador", ["Todos"] + jogadores, label_visibility="collapsed")
+        filtro = st.selectbox(
+            "Filtrar por jogador", ["Todos"] + jogadores, label_visibility="collapsed"
+        )
         if filtro != "Todos":
             fichas = [f for f in fichas if f["jogador"] == filtro]
 
@@ -70,7 +93,8 @@ def _tela_lista():
         _linha_ficha(ficha, role)
 
 
-def _linha_ficha(ficha: dict, role: str):
+def _linha_ficha(ficha: dict, role: str) -> None:
+    """Render a single ficha row with HP/MP bars and a link to the detail view."""
     with st.container(border=True):
         col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
         with col1:
@@ -80,11 +104,15 @@ def _linha_ficha(ficha: dict, role: str):
                 info += f" · 👤 {ficha['jogador']}"
             st.caption(info)
         with col2:
-            hp_pct = ficha["hp_atual"] / ficha["hp_max"] if ficha["hp_max"] > 0 else 0
-            st.progress(min(hp_pct, 1.0), text=f"HP {ficha['hp_atual']}/{ficha['hp_max']}")
+            st.progress(
+                calc_pct(ficha["hp_atual"], ficha["hp_max"]),
+                text=f"HP {ficha['hp_atual']}/{ficha['hp_max']}",
+            )
         with col3:
-            mp_pct = ficha["mp_atual"] / ficha["mp_max"] if ficha["mp_max"] > 0 else 0
-            st.progress(min(mp_pct, 1.0), text=f"MP {ficha['mp_atual']}/{ficha['mp_max']}")
+            st.progress(
+                calc_pct(ficha["mp_atual"], ficha["mp_max"]),
+                text=f"MP {ficha['mp_atual']}/{ficha['mp_max']}",
+            )
         with col4:
             if st.button("Ver", key=f"ver_{ficha['id']}", use_container_width=True):
                 _ir_para("ver", ficha["id"])
@@ -93,7 +121,8 @@ def _linha_ficha(ficha: dict, role: str):
 
 # ── Ver ──────────────────────────────────────────────────────────────────────
 
-def _tela_ver():
+def _tela_ver() -> None:
+    """Render the full detail view for a single ficha."""
     ficha_id = st.session_state.ficha_selecionada
     ficha = api.get_ficha(ficha_id)
     role = st.session_state.role
@@ -123,12 +152,10 @@ def _tela_ver():
 
     col1, col2 = st.columns(2)
     with col1:
-        hp_pct = ficha["hp_atual"] / ficha["hp_max"] if ficha["hp_max"] > 0 else 0
-        st.progress(min(hp_pct, 1.0))
+        st.progress(calc_pct(ficha["hp_atual"], ficha["hp_max"]))
         st.metric("HP", f"{ficha['hp_atual']} / {ficha['hp_max']}")
     with col2:
-        mp_pct = ficha["mp_atual"] / ficha["mp_max"] if ficha["mp_max"] > 0 else 0
-        st.progress(min(mp_pct, 1.0))
+        st.progress(calc_pct(ficha["mp_atual"], ficha["mp_max"]))
         st.metric("MP", f"{ficha['mp_atual']} / {ficha['mp_max']}")
 
     st.divider()
@@ -167,7 +194,8 @@ def _tela_ver():
 
 # ── Criar ────────────────────────────────────────────────────────────────────
 
-def _tela_criar():
+def _tela_criar() -> None:
+    """Render the new ficha creation form."""
     col_back, col_titulo = st.columns([1, 7])
     with col_back:
         if st.button("← Voltar"):
@@ -201,10 +229,12 @@ def _tela_criar():
 
         st.subheader("Atributos")
         cols = st.columns(6)
-        atributos = {}
+        atributos: dict[str, int] = {}
         for i, attr in enumerate(ATRIBUTOS):
             with cols[i]:
-                atributos[attr] = st.number_input(LABELS[attr], min_value=1, max_value=20, value=10, key=f"c_{attr}")
+                atributos[attr] = st.number_input(
+                    LABELS[attr], min_value=1, max_value=20, value=10, key=f"c_{attr}"
+                )
 
         historia = st.text_area("História do Personagem", height=150)
         submit = st.form_submit_button("Criar Ficha", use_container_width=True, type="primary")
@@ -212,6 +242,11 @@ def _tela_criar():
     if submit:
         if not nome:
             st.error("Informe o nome do personagem!")
+            return
+        erros = _validar_recursos(int(hp_atual), int(hp_max), int(mp_atual), int(mp_max))
+        for e in erros:
+            st.error(e)
+        if erros:
             return
         res = api.criar_ficha({
             "nome": nome,
@@ -236,7 +271,8 @@ def _tela_criar():
 
 # ── Editar ───────────────────────────────────────────────────────────────────
 
-def _tela_editar():
+def _tela_editar() -> None:
+    """Render the ficha edit form pre-populated with current values."""
     ficha_id = st.session_state.ficha_selecionada
     ficha = api.get_ficha(ficha_id)
 
@@ -279,12 +315,12 @@ def _tela_editar():
 
         st.subheader("Atributos")
         cols = st.columns(6)
-        atributos = {}
+        atributos: dict[str, int] = {}
         for i, attr in enumerate(ATRIBUTOS):
             with cols[i]:
                 atributos[attr] = st.number_input(
                     LABELS[attr], min_value=1, max_value=20,
-                    value=ficha["atributos"][attr], key=f"e_{attr}"
+                    value=ficha["atributos"][attr], key=f"e_{attr}",
                 )
 
         historia = st.text_area("História do Personagem", value=ficha["historia"], height=150)
@@ -293,6 +329,11 @@ def _tela_editar():
     if submit:
         if not nome:
             st.error("Informe o nome do personagem!")
+            return
+        erros = _validar_recursos(int(hp_atual), int(hp_max), int(mp_atual), int(mp_max))
+        for e in erros:
+            st.error(e)
+        if erros:
             return
         res = api.atualizar_ficha(ficha_id, {
             "nome": nome,
