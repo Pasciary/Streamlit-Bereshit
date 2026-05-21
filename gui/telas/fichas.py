@@ -1,7 +1,7 @@
 import streamlit as st
 
 from config import api
-from gui.utils import calc_pct
+from gui.components.status_bar import show_status_bar, show_vida_sanidade
 
 CLASSES = [
     "Guerreiro", "Mago", "Ladino", "Clerigo", "Bardo",
@@ -57,18 +57,19 @@ def _validar_recursos(hp_atual: int, hp_max: int, mp_atual: int, mp_max: int) ->
 
 
 def _render_atributos(ficha: dict) -> None:
-    """Render the 6 D&D attributes using the hk-attr-grid HTML layout."""
+    """Render the 6 D&D attributes using a 3×2 HTML grid."""
     partes = []
     for attr in ATRIBUTOS:
         val = ficha["atributos"][attr]
         mod = (val - 10) // 2
         sinal = "+" if mod >= 0 else ""
-        partes.append(f"""
-        <div class='hk-attr-card'>
-            <div class='hk-attr-label'>{LABELS[attr].upper()}</div>
-            <div class='hk-attr-val'>{val}</div>
-            <div class='hk-attr-mod'>{sinal}{mod}</div>
-        </div>""")
+        partes.append(
+            f"<div class='hk-attr-card'>"
+            f"<div class='hk-attr-label'>{LABELS[attr].upper()}</div>"
+            f"<div class='hk-attr-val'>{val}</div>"
+            f"<div class='hk-attr-mod'>{sinal}{mod}</div>"
+            f"</div>"
+        )
     st.markdown(
         f"<div class='hk-attr-grid'>{''.join(partes)}</div>",
         unsafe_allow_html=True,
@@ -113,31 +114,21 @@ def _tela_lista() -> None:
 
 
 def _linha_ficha(ficha: dict, role: str) -> None:
-    """Render a single ficha row with HP/MP bars and a link to the detail view."""
+    """Render a ficha card with ornamental status bars and a detail link."""
     with st.container(border=True):
-        col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
-        with col1:
-            info = f"{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}"
-            if role == "mestre":
-                info += f" · 👤 {ficha['jogador']}"
-            st.markdown(f"""
-            <div class='hk-card-title'>{ficha['nome']}</div>
-            <div class='hk-card-sub'>{info}</div>
-            """, unsafe_allow_html=True)
-        with col2:
-            st.progress(
-                calc_pct(ficha["hp_atual"], ficha["hp_max"]),
-                text=f"HP {ficha['hp_atual']}/{ficha['hp_max']}",
-            )
-        with col3:
-            st.progress(
-                calc_pct(ficha["mp_atual"], ficha["mp_max"]),
-                text=f"MP {ficha['mp_atual']}/{ficha['mp_max']}",
-            )
-        with col4:
-            if st.button("Ver", key=f"ver_{ficha['id']}", use_container_width=True):
-                _ir_para("ver", ficha["id"])
-                st.rerun()
+        info = f"{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}"
+        if role == "mestre":
+            info += f" · 👤 {ficha['jogador']}"
+        st.markdown(f"""
+        <div class='hk-card-title'>{ficha['nome']}</div>
+        <div class='hk-card-sub'>{info}</div>
+        """, unsafe_allow_html=True)
+
+        show_vida_sanidade(ficha["hp_atual"], ficha["hp_max"], ficha["mp_atual"], ficha["mp_max"])
+
+        if st.button("📖 Ver Ficha", key=f"ver_{ficha['id']}", use_container_width=True):
+            _ir_para("ver", ficha["id"])
+            st.rerun()
 
 
 # ── Ver ──────────────────────────────────────────────────────────────────────
@@ -161,34 +152,56 @@ def _tela_ver() -> None:
             _ir_para("lista")
             st.rerun()
     with col_titulo:
-        st.title(ficha["nome"])
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Classe", ficha["classe"])
-    with col2:
-        st.metric("Raça", ficha["raca"])
-    with col3:
-        st.metric("Nível", ficha["nivel"])
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.progress(calc_pct(ficha["hp_atual"], ficha["hp_max"]))
-        st.metric("HP", f"{ficha['hp_atual']} / {ficha['hp_max']}")
-    with col2:
-        st.progress(calc_pct(ficha["mp_atual"], ficha["mp_max"]))
-        st.metric("MP", f"{ficha['mp_atual']} / {ficha['mp_max']}")
+        st.markdown(f"""
+        <div style='font-family:Cinzel,serif;'>
+            <div style='font-size:22px;font-weight:700;letter-spacing:.15em;color:#c8b89a;'>{ficha['nome'].upper()}</div>
+            <div style='font-size:11px;color:#5a4a30;letter-spacing:.08em;'>
+                {ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.divider()
-    st.markdown("<div class='hk-section-title'>Atributos</div>", unsafe_allow_html=True)
-    _render_atributos(ficha)
 
-    st.divider()
-    st.markdown("<div class='hk-section-title'>História</div>", unsafe_allow_html=True)
-    st.markdown(
-        f"<div style='color:#8a7a6a;font-size:14px;line-height:1.7;'>{ficha['historia'] or '—'}</div>",
-        unsafe_allow_html=True,
-    )
+    aba_status, aba_info = st.tabs(["⚔️ Status", "📝 Info"])
+
+    with aba_status:
+        col1, col2 = st.columns(2)
+        with col1:
+            show_status_bar("vida", ficha["hp_atual"], ficha["hp_max"])
+            show_status_bar("sanidade", ficha["mp_atual"], ficha["mp_max"])
+
+            st.divider()
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Classe", ficha["classe"])
+            c2.metric("Raça", ficha["raca"])
+            c3.metric("Nível", ficha["nivel"])
+
+        with col2:
+            st.markdown("<div class='hk-section-title'>Atributos</div>", unsafe_allow_html=True)
+            _render_atributos(ficha)
+
+    with aba_info:
+        st.markdown(f"""
+        <div class='hk-card'>
+            <table style='width:100%;font-size:12px;border-collapse:collapse;'>
+                <tr><td style='color:#5a4a30;padding:5px 0;width:35%'>Nome</td><td style='color:#c8b89a;'>{ficha['nome']}</td></tr>
+                <tr><td style='color:#5a4a30;padding:5px 0;'>Raça</td><td style='color:#c8b89a;'>{ficha['raca']}</td></tr>
+                <tr><td style='color:#5a4a30;padding:5px 0;'>Classe</td><td style='color:#c8b89a;'>{ficha['classe']}</td></tr>
+                <tr><td style='color:#5a4a30;padding:5px 0;'>Nível</td><td style='color:#c8b89a;'>{ficha['nivel']}</td></tr>
+                <tr><td style='color:#5a4a30;padding:5px 0;'>Jogador</td><td style='color:#c8b89a;'>{ficha['jogador']}</td></tr>
+            </table>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if ficha.get("historia"):
+            st.divider()
+            st.markdown("<div class='hk-section-title'>História</div>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class='hk-card'>
+                <div style='font-size:13px;color:#8a7a6a;line-height:1.8;'>{ficha['historia']}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
     pode_editar = role == "mestre" or ficha["jogador"] == usuario
     if pode_editar:
@@ -246,10 +259,10 @@ def _tela_criar() -> None:
             mp_atual = st.number_input("MP Atual", min_value=0, value=10)
 
         st.markdown("<div class='hk-section-title'>Atributos</div>", unsafe_allow_html=True)
-        cols = st.columns(6)
+        col_a, col_b, col_c = st.columns(3)
         atributos: dict[str, int] = {}
         for i, attr in enumerate(ATRIBUTOS):
-            with cols[i]:
+            with [col_a, col_b, col_c][i % 3]:
                 atributos[attr] = st.number_input(
                     LABELS[attr], min_value=1, max_value=20, value=10, key=f"c_{attr}"
                 )
@@ -332,10 +345,10 @@ def _tela_editar() -> None:
             mp_atual = st.number_input("MP Atual", min_value=0, value=ficha["mp_atual"])
 
         st.markdown("<div class='hk-section-title'>Atributos</div>", unsafe_allow_html=True)
-        cols = st.columns(6)
+        col_a, col_b, col_c = st.columns(3)
         atributos: dict[str, int] = {}
         for i, attr in enumerate(ATRIBUTOS):
-            with cols[i]:
+            with [col_a, col_b, col_c][i % 3]:
                 atributos[attr] = st.number_input(
                     LABELS[attr], min_value=1, max_value=20,
                     value=ficha["atributos"][attr], key=f"e_{attr}",

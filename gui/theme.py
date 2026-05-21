@@ -143,7 +143,7 @@ hr {{ border-color: {BORDER_DIM}; }}
 }}
 .hk-attr-grid {{
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     margin: 8px 0 16px;
 }}
