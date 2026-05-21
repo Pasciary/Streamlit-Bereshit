@@ -29,7 +29,7 @@ def _dashboard_mestre(dados: dict) -> None:
         st.metric("Jogadores", len(dados["jogadores"]))
 
     st.divider()
-    st.subheader("Fichas por Jogador")
+    st.markdown("<div class='hk-section-title'>Fichas por Jogador</div>", unsafe_allow_html=True)
 
     fichas_por_jogador: dict[str, list] = {}
     for ficha in dados["fichas"]:
@@ -56,7 +56,7 @@ def _dashboard_jogador(usuario: str, dados: dict) -> None:
         st.metric("Fichas Ativas", dados["fichas_ativas"])
 
     st.divider()
-    st.subheader("Seus Personagens")
+    st.markdown("<div class='hk-section-title'>Seus Personagens</div>", unsafe_allow_html=True)
 
     if not dados["fichas"]:
         st.info("Você ainda não tem fichas. Crie uma na seção Fichas!")
@@ -71,8 +71,10 @@ def _card_ficha(ficha: dict) -> None:
     with st.container(border=True):
         col1, col2, col3 = st.columns([3, 2, 2])
         with col1:
-            st.markdown(f"**{ficha['nome']}**")
-            st.caption(f"{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}")
+            st.markdown(f"""
+            <div class='hk-card-title'>{ficha['nome']}</div>
+            <div class='hk-card-sub'>{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}</div>
+            """, unsafe_allow_html=True)
         with col2:
             st.progress(
                 calc_pct(ficha["hp_atual"], ficha["hp_max"]),

@@ -56,6 +56,25 @@ def _validar_recursos(hp_atual: int, hp_max: int, mp_atual: int, mp_max: int) ->
     return erros
 
 
+def _render_atributos(ficha: dict) -> None:
+    """Render the 6 D&D attributes using the hk-attr-grid HTML layout."""
+    partes = []
+    for attr in ATRIBUTOS:
+        val = ficha["atributos"][attr]
+        mod = (val - 10) // 2
+        sinal = "+" if mod >= 0 else ""
+        partes.append(f"""
+        <div class='hk-attr-card'>
+            <div class='hk-attr-label'>{LABELS[attr].upper()}</div>
+            <div class='hk-attr-val'>{val}</div>
+            <div class='hk-attr-mod'>{sinal}{mod}</div>
+        </div>""")
+    st.markdown(
+        f"<div class='hk-attr-grid'>{''.join(partes)}</div>",
+        unsafe_allow_html=True,
+    )
+
+
 # ── Lista ────────────────────────────────────────────────────────────────────
 
 def _tela_lista() -> None:
@@ -98,11 +117,13 @@ def _linha_ficha(ficha: dict, role: str) -> None:
     with st.container(border=True):
         col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
         with col1:
-            st.markdown(f"**{ficha['nome']}**")
             info = f"{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}"
             if role == "mestre":
                 info += f" · 👤 {ficha['jogador']}"
-            st.caption(info)
+            st.markdown(f"""
+            <div class='hk-card-title'>{ficha['nome']}</div>
+            <div class='hk-card-sub'>{info}</div>
+            """, unsafe_allow_html=True)
         with col2:
             st.progress(
                 calc_pct(ficha["hp_atual"], ficha["hp_max"]),
@@ -159,18 +180,15 @@ def _tela_ver() -> None:
         st.metric("MP", f"{ficha['mp_atual']} / {ficha['mp_max']}")
 
     st.divider()
-    st.subheader("Atributos")
-    cols = st.columns(6)
-    for i, attr in enumerate(ATRIBUTOS):
-        with cols[i]:
-            val = ficha["atributos"][attr]
-            mod = (val - 10) // 2
-            sinal = "+" if mod >= 0 else ""
-            st.metric(LABELS[attr], val, delta=f"{sinal}{mod}", delta_color="off")
+    st.markdown("<div class='hk-section-title'>Atributos</div>", unsafe_allow_html=True)
+    _render_atributos(ficha)
 
     st.divider()
-    st.subheader("História")
-    st.write(ficha["historia"] or "—")
+    st.markdown("<div class='hk-section-title'>História</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='color:#8a7a6a;font-size:14px;line-height:1.7;'>{ficha['historia'] or '—'}</div>",
+        unsafe_allow_html=True,
+    )
 
     pode_editar = role == "mestre" or ficha["jogador"] == usuario
     if pode_editar:
@@ -227,7 +245,7 @@ def _tela_criar() -> None:
         with col4:
             mp_atual = st.number_input("MP Atual", min_value=0, value=10)
 
-        st.subheader("Atributos")
+        st.markdown("<div class='hk-section-title'>Atributos</div>", unsafe_allow_html=True)
         cols = st.columns(6)
         atributos: dict[str, int] = {}
         for i, attr in enumerate(ATRIBUTOS):
@@ -313,7 +331,7 @@ def _tela_editar() -> None:
         with col4:
             mp_atual = st.number_input("MP Atual", min_value=0, value=ficha["mp_atual"])
 
-        st.subheader("Atributos")
+        st.markdown("<div class='hk-section-title'>Atributos</div>", unsafe_allow_html=True)
         cols = st.columns(6)
         atributos: dict[str, int] = {}
         for i, attr in enumerate(ATRIBUTOS):
