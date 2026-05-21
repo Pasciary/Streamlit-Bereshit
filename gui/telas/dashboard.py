@@ -1,7 +1,7 @@
 import streamlit as st
 
 from config import api
-from gui.utils import calc_pct
+from gui.components.status_bar import show_vida_sanidade
 
 
 def mostrar() -> None:
@@ -67,21 +67,10 @@ def _dashboard_jogador(usuario: str, dados: dict) -> None:
 
 
 def _card_ficha(ficha: dict) -> None:
-    """Render a compact ficha card with HP/MP progress bars."""
+    """Render a compact ficha card with ornamental HP/MP status bars."""
     with st.container(border=True):
-        col1, col2, col3 = st.columns([3, 2, 2])
-        with col1:
-            st.markdown(f"""
-            <div class='hk-card-title'>{ficha['nome']}</div>
-            <div class='hk-card-sub'>{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}</div>
-            """, unsafe_allow_html=True)
-        with col2:
-            st.progress(
-                calc_pct(ficha["hp_atual"], ficha["hp_max"]),
-                text=f"HP {ficha['hp_atual']}/{ficha['hp_max']}",
-            )
-        with col3:
-            st.progress(
-                calc_pct(ficha["mp_atual"], ficha["mp_max"]),
-                text=f"MP {ficha['mp_atual']}/{ficha['mp_max']}",
-            )
+        st.markdown(f"""
+        <div class='hk-card-title'>{ficha['nome']}</div>
+        <div class='hk-card-sub'>{ficha['raca']} · {ficha['classe']} · Nível {ficha['nivel']}</div>
+        """, unsafe_allow_html=True)
+        show_vida_sanidade(ficha["hp_atual"], ficha["hp_max"], ficha["mp_atual"], ficha["mp_max"])

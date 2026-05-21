@@ -46,8 +46,9 @@ with st.sidebar:
     st.markdown(f"""
     <div style='text-align:center;padding:8px 0 14px;border-bottom:1px solid #1a1a2a;margin-bottom:10px;'>
         <div style='font-size:26px;'>⚔️</div>
-        <div style='font-family:Cinzel,serif;font-size:12px;letter-spacing:.15em;color:#c8b89a;'>BERESHIT</div>
-        <div style='font-size:9px;color:#3a3a5a;letter-spacing:.06em;'>Sistema de Campanha</div>
+        <div style='font-family:Cinzel,serif;font-size:14px;letter-spacing:.18em;color:#c8b89a;font-weight:700;'>BERESHIT</div>
+        <div style='font-size:12px;color:#5a4a30;letter-spacing:.06em;margin-top:2px;'>בְּרֵאשִׁית</div>
+        <div style='font-size:9px;color:#3a3a5a;letter-spacing:.06em;margin-top:2px;'>v0.3 · protótipo</div>
     </div>
     <div style='font-size:9px;letter-spacing:.14em;color:#5a4a30;margin:0 0 6px 4px;'>
         {'— MESTRE —' if eh_mestre else '— JOGADOR —'}
