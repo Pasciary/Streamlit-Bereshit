@@ -23,84 +23,133 @@ GLOBAL_CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap');
 
-body, .stApp {{ background-color: {BG_DARK}; color: {TEXT_GOLD}; }}
+/* ── fundo geral ── */
+html, body, #root, .stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+section[data-testid="stMain"] > div,
+.main, .main > .block-container,
+.block-container {{
+    background-color: {BG_DARK} !important;
+    color: {TEXT_GOLD} !important;
+}}
 
+/* garante que camadas intermediárias não adicionem fundo branco */
+[data-testid="stVerticalBlock"],
+.element-container,
+[data-testid="column"] {{
+    background-color: transparent !important;
+}}
+
+/* ── texto global ── */
+p, span, li, td, th {{ color: {TEXT_GOLD}; }}
 h1, h2, h3, h4 {{ color: {TEXT_GOLD} !important; font-family: 'Cinzel', serif; letter-spacing: .06em; }}
+[data-testid="stMarkdownContainer"] p {{ color: {TEXT_GOLD}; }}
 
-[data-testid="stSidebar"] {{
+/* ── sidebar ── */
+[data-testid="stSidebar"],
+[data-testid="stSidebarContent"] {{
     background-color: {BG_DEEP} !important;
-    border-right: 1px solid {BORDER_DIM};
+    border-right: 1px solid {BORDER_DIM} !important;
 }}
 [data-testid="stSidebar"] * {{ color: {TEXT_MID}; }}
 [data-testid="stSidebar"] .stButton button {{
-    background: transparent;
-    border: 0.5px solid transparent;
-    color: {TEXT_MID};
+    background: transparent !important;
+    border: 0.5px solid transparent !important;
+    color: {TEXT_MID} !important;
     text-align: left;
     width: 100%;
     border-radius: 6px;
     transition: all .15s;
 }}
 [data-testid="stSidebar"] .stButton button:hover {{
-    background: {BG_CARD};
-    border-color: {BORDER_DIM};
-    color: {TEXT_GOLD};
+    background: {BG_CARD} !important;
+    border-color: {BORDER_DIM} !important;
+    color: {TEXT_GOLD} !important;
 }}
 
-header[data-testid="stHeader"] {{ background: {BG_DEEP} !important; border-bottom: 1px solid {BORDER_DIM}; }}
+/* ── header ── */
+header[data-testid="stHeader"],
+[data-testid="stDecoration"] {{
+    background: {BG_DEEP} !important;
+    border-bottom: 1px solid {BORDER_DIM} !important;
+}}
 
+/* ── inputs ── */
 .stTextInput input, .stNumberInput input, .stTextArea textarea,
-.stSelectbox div[data-baseweb="select"] {{
+.stSelectbox div[data-baseweb="select"],
+[data-baseweb="input"], [data-baseweb="textarea"] {{
     background-color: {BG_CARD} !important;
     color: {TEXT_GOLD} !important;
     border-color: {BORDER_MED} !important;
     border-radius: 6px !important;
 }}
 .stTextInput label, .stNumberInput label, .stTextArea label,
-.stSelectbox label {{ color: {TEXT_MID} !important; font-size: 12px !important; }}
-
-.stTabs [data-baseweb="tab-list"] {{ background: {BG_DEEP}; border-radius: 8px; padding: 2px; }}
-.stTabs [data-baseweb="tab"] {{ background: transparent; color: {TEXT_DIM}; border-radius: 6px; }}
-.stTabs [aria-selected="true"] {{ background: {BG_CARD}; color: {TEXT_GOLD}; }}
-
-div[data-testid="metric-container"] {{
-    background: {BG_CARD};
-    border: 0.5px solid {BORDER_DIM};
-    border-radius: 8px;
-    padding: 10px 14px;
+.stSelectbox label, .stSlider label {{
+    color: {TEXT_MID} !important;
+    font-size: 12px !important;
 }}
-div[data-testid="metric-container"] label {{ color: {TEXT_DIM} !important; font-size: 11px !important; }}
-div[data-testid="metric-container"] [data-testid="stMetricValue"] {{ color: {TEXT_GOLD} !important; }}
 
-.stExpander {{ background: {BG_CARD}; border: 0.5px solid {BORDER_DIM}; border-radius: 8px; }}
-[data-testid="stVerticalBlock"] > div {{ color: {TEXT_GOLD}; }}
+/* ── abas ── */
+.stTabs [data-baseweb="tab-list"] {{ background: {BG_DEEP} !important; border-radius: 8px; padding: 2px; }}
+.stTabs [data-baseweb="tab"] {{ background: transparent !important; color: {TEXT_DIM} !important; border-radius: 6px; }}
+.stTabs [aria-selected="true"] {{ background: {BG_CARD} !important; color: {TEXT_GOLD} !important; }}
+
+/* ── métricas ── */
+div[data-testid="metric-container"] {{
+    background: {BG_CARD} !important;
+    border: 0.5px solid {BORDER_DIM} !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+}}
+div[data-testid="metric-container"] label,
+div[data-testid="metric-container"] [data-testid="stMetricLabel"] *,
+div[data-testid="stMetricLabel"] {{ color: {TEXT_DIM} !important; font-size: 11px !important; }}
+div[data-testid="metric-container"] [data-testid="stMetricValue"],
+[data-testid="stMetricValue"] * {{ color: {TEXT_GOLD} !important; }}
+
+/* ── containers / expanders ── */
+.stExpander,
+[data-testid="stExpander"] {{
+    background: {BG_CARD} !important;
+    border: 0.5px solid {BORDER_DIM} !important;
+    border-radius: 8px !important;
+}}
 [data-testid="stVerticalBlockBorderWrapper"] {{
     background: {BG_CARD} !important;
     border-color: {BORDER_GOLD} !important;
     border-radius: 8px !important;
 }}
 
-.stButton > button[kind="primary"] {{
+/* ── botões ── */
+.stButton > button {{
+    background: {BG_CARD} !important;
+    border-color: {BORDER_DIM} !important;
+    color: {TEXT_MID} !important;
+    border-radius: 6px !important;
+}}
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="baseButton-primary"] {{
     background: #1a2a1a !important;
     border-color: #2a4a2a !important;
     color: {COLOR_SUCCESS} !important;
 }}
-.stButton > button[kind="secondary"] {{
-    background: {BG_CARD} !important;
-    border-color: {BORDER_DIM} !important;
-    color: {TEXT_MID} !important;
-}}
 
+/* ── progress ── */
 .stProgress > div > div {{ background: {BORDER_GOLD2}; }}
-[data-testid="stProgressBar"] {{ background: {BORDER_DIM}; }}
+[data-testid="stProgressBar"] > div {{ background: {BORDER_GOLD2} !important; }}
 
-hr {{ border-color: {BORDER_DIM}; }}
+/* ── alertas / info ── */
+[data-testid="stAlert"],
+.stAlert {{ background: {BG_CARD} !important; border-color: {BORDER_GOLD} !important; color: {TEXT_MID} !important; }}
+[data-testid="stAlert"] * {{ color: {TEXT_MID} !important; }}
+
+hr {{ border-color: {BORDER_DIM} !important; }}
 
 ::-webkit-scrollbar {{ width: 4px; }}
 ::-webkit-scrollbar-track {{ background: {BG_DEEP}; }}
 ::-webkit-scrollbar-thumb {{ background: {BORDER_GOLD}; border-radius: 2px; }}
-
-.stAlert {{ background: {BG_CARD} !important; border-color: {BORDER_GOLD} !important; color: {TEXT_MID} !important; }}
 
 .hk-card {{
     background: {BG_CARD};
