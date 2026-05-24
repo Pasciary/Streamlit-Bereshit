@@ -1,15 +1,8 @@
-import logging
-
 import streamlit as st
 
-from gui import db
+from gui import client
 from gui.theme import GLOBAL_CSS
-from gui.telas import dashboard, fichas, login
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
+from gui.telas import login, dashboard, fichas, ficha_detalhe, mesa
 
 st.set_page_config(
     page_title="Bereshit",
@@ -20,27 +13,24 @@ st.set_page_config(
 
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
-
-@st.cache_resource
-def _init_db() -> None:
-    db.init_db()
-
-
-_init_db()
+if client.MOCK_ATIVO:
+    st.sidebar.info("🧪 Modo **mock** — dados fictícios (sem API).")
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
+if "tela" not in st.session_state:
+    st.session_state.tela = "login"
+
+def ir_para(tela):
+    st.session_state.tela = tela
+    st.rerun()
 
 if not st.session_state.logado:
     login.mostrar()
     st.stop()
 
-if "tela" not in st.session_state:
-    st.session_state.tela = "dashboard"
-
-usuario    = st.session_state.usuario
-role       = st.session_state.role
-eh_mestre  = role == "mestre"
+usuario   = st.session_state.get("usuario", {})
+eh_mestre = usuario.get("role") == "mestre"
 
 with st.sidebar:
     st.markdown(f"""
@@ -56,29 +46,27 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     tela = st.session_state.tela
+
     nav_items = [
-        ("📊", "Dashboard", "dashboard"),
-        ("📜", "Fichas",    "fichas"),
+        ("📊", "Dashboard",  "dashboard"),
+        ("📜", "Fichas",     "fichas"),
+        ("🎲", "Mesa",       "mesa"),
+        ("📖", "Grimório",   "grimorio"),
+        ("🗒️", "Notas",      "notas"),
     ]
     for icon, label, key in nav_items:
-        ativo = tela == key or (key == "fichas" and tela in ("fichas",))
-        if st.button(
-            f"{icon} {label}",
-            use_container_width=True,
-            type="primary" if ativo else "secondary",
-            key=f"nav_{key}",
-        ):
-            st.session_state.tela = key
-            st.rerun()
+        ativo = tela in [key, f"{key}_detalhe"]
+        if st.button(f"{icon} {label}", use_container_width=True,
+                     type="primary" if ativo else "secondary", key=f"nav_{key}"):
+            ir_para(key)
 
     st.divider()
     st.markdown(f"""
     <div style='padding:6px 4px;'>
-        <div style='font-size:12px;color:#c8b89a;font-weight:500;'>{usuario}</div>
+        <div style='font-size:12px;color:#c8b89a;font-weight:500;'>{usuario.get('nome','?')}</div>
         <div style='font-size:10px;color:#5a4a30;'>{'Mestre de Jogo' if eh_mestre else 'Jogador'}</div>
     </div>
     """, unsafe_allow_html=True)
-
     if st.button("🚪 Sair", use_container_width=True):
         st.session_state.clear()
         st.rerun()
@@ -87,7 +75,17 @@ tela = st.session_state.tela
 
 if tela == "dashboard":
     dashboard.mostrar()
-elif tela == "fichas":
+elif tela in ("fichas", "criar_ficha"):
     fichas.mostrar()
+elif tela == "ficha_detalhe":
+    ficha_detalhe.mostrar()
+elif tela == "mesa":
+    mesa.mostrar()
+elif tela == "grimorio":
+    st.title("📖 Grimório")
+    st.info("Em construção — catálogo de magias em breve!")
+elif tela == "notas":
+    st.title("🗒️ Notas")
+    st.info("Em construção — notas de campanha em breve!")
 else:
-    st.error(f"Tela '{tela}' não encontrada.")
+    ir_para("dashboard")
