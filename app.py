@@ -29,7 +29,11 @@ if not st.session_state.logado:
     login.mostrar()
     st.stop()
 
-usuario   = st.session_state.get("usuario", {})
+usuario = st.session_state.get("usuario", {})
+if not isinstance(usuario, dict):
+    st.session_state.clear()
+    st.rerun()
+
 eh_mestre = usuario.get("role") == "mestre"
 
 with st.sidebar:
