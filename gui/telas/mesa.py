@@ -207,6 +207,28 @@ def _render_panorama(combate, fichas):
     }
     ORDEM = ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]
 
+    def _barra_html(tipo, status):
+        dados = status.get(tipo)
+        if not dados:
+            return ""
+        atual  = dados.get("atual", 0)
+        maximo = max(dados.get("maximo", 1), 1)
+        pct    = max(0, min(100, atual / maximo * 100))
+        cs, ce = STATUS_CORES.get(tipo, ("#888", "#444"))
+        label  = tipo[:2].upper()
+        return (
+            "<div style=\"display:flex;align-items:center;gap:4px;margin-bottom:2px;\">"
+            "<span style=\"font-size:8px;color:#5a4a30;width:14px;text-align:right;flex-shrink:0;\">"
+            + label
+            + "</span><div style=\"flex:1;height:8px;background:#0d0b08;border:1px solid #252018;"
+            "border-radius:2px;overflow:hidden;position:relative;\">"
+            "<div style=\"position:absolute;top:0;left:0;height:100%;width:" + f"{pct:.0f}" + "%;"
+            "background:linear-gradient(to right," + cs + "," + ce + ");\"></div>"
+            "</div><span style=\"font-size:8px;color:#6a5a40;width:32px;text-align:right;flex-shrink:0;\">"
+            + f"{atual}/{maximo}"
+            + "</span></div>"
+        )
+
     linhas = []
     for i, part in enumerate(participantes):
         eh_turno = i == turno_atual
@@ -217,61 +239,42 @@ def _render_panorama(combate, fichas):
         if ficha and "vida" not in status:
             status["vida"] = {"atual": ficha.get("hp_atual", 0), "maximo": ficha.get("hp_max", 1)}
 
-        def _barra(tipo, _status=status):
-            dados = _status.get(tipo)
-            if not dados:
-                return ""
-            atual  = dados.get("atual", 0)
-            maximo = max(dados.get("maximo", 1), 1)
-            pct    = max(0, min(100, atual / maximo * 100))
-            c1, c2 = STATUS_CORES.get(tipo, ("#888", "#444"))
-            label  = tipo[:2].upper()
-            return f"""<div style='display:flex;align-items:center;gap:4px;margin-bottom:2px;'>
-                <span style='font-size:8px;color:#5a4a30;width:14px;text-align:right;flex-shrink:0;'>{label}</span>
-                <div style='flex:1;height:8px;background:#0d0b08;border:1px solid #252018;border-radius:2px;overflow:hidden;position:relative;'>
-                    <div style='position:absolute;top:0;left:0;height:100%;width:{pct:.0f}%;
-                                background:linear-gradient(to right,{c1},{c2});'></div>
-                </div>
-                <span style='font-size:8px;color:#6a5a40;width:32px;text-align:right;flex-shrink:0;'>{atual}/{maximo}</span>
-            </div>"""
+        barras = "".join(_barra_html(t, status) for t in ORDEM if status.get(t))
+        sem_ficha = "<span style=\"font-size:10px;color:#3a3a5a;\">sem ficha</span>"
 
-        barras_html = "".join(_barra(t) for t in ORDEM if status.get(t))
-
-        condicoes = ""
+        conds = ""
         if ficha and ficha.get("condicoes"):
-            tags = "".join(
-                f"<span style='font-size:8px;background:#2a1a08;border:1px solid #5a3a10;"
-                f"border-radius:3px;padding:1px 4px;color:#c8a060;margin-right:2px;'>{c}</span>"
+            conds = "<div style=\"margin-top:3px;\">" + "".join(
+                "<span style=\"font-size:8px;background:#2a1a08;border:1px solid #5a3a10;"
+                "border-radius:3px;padding:1px 4px;color:#c8a060;margin-right:2px;\">"
+                + c + "</span>"
                 for c in ficha["condicoes"]
-            )
-            condicoes = f"<div style='margin-top:3px;'>{tags}</div>"
+            ) + "</div>"
 
         bg_row  = "#0d1a0d" if eh_turno else "transparent"
         brd_row = "#2a4a2a" if eh_turno else "#1a1a2a"
         cor_nom = "#80d080" if eh_turno else "#c8b89a"
-        turno_badge = (
-            "<span style='font-size:8px;background:#1a4a1a;border:1px solid #2a6a2a;"
-            "border-radius:3px;padding:1px 5px;color:#80d080;margin-left:6px;'>● TURNO</span>"
+        badge   = (
+            "<span style=\"font-size:8px;background:#1a4a1a;border:1px solid #2a6a2a;"
+            "border-radius:3px;padding:1px 5px;color:#80d080;margin-left:6px;\">&#9679; TURNO</span>"
             if eh_turno else ""
         )
 
-        linhas.append(f"""
-        <div style='display:grid;grid-template-columns:20px 180px 1fr;align-items:start;
-                    gap:8px;padding:7px 10px;background:{bg_row};
-                    border:0.5px solid {brd_row};border-radius:6px;margin-bottom:3px;'>
-            <div style='font-size:16px;text-align:center;padding-top:2px;'>{icone}</div>
-            <div>
-                <div style='font-family:Cinzel,serif;font-size:11px;font-weight:600;
-                            color:{cor_nom};letter-spacing:.06em;'>
-                    {part['nome']}{turno_badge}
-                </div>
-                <div style='font-size:9px;color:#3a4a6a;margin-top:1px;'>init {part['iniciativa']}</div>
-                {condicoes}
-            </div>
-            <div style='padding-top:2px;'>
-                {barras_html if barras_html else f'<span style="font-size:10px;color:#3a3a5a;">sem ficha</span>'}
-            </div>
-        </div>
-        """)
+        linhas.append(
+            "<div style=\"display:grid;grid-template-columns:20px 180px 1fr;align-items:start;"
+            "gap:8px;padding:7px 10px;background:" + bg_row + ";"
+            "border:0.5px solid " + brd_row + ";border-radius:6px;margin-bottom:3px;\">"
+            "<div style=\"font-size:16px;text-align:center;padding-top:2px;\">" + icone + "</div>"
+            "<div>"
+            "<div style=\"font-family:Cinzel,serif;font-size:11px;font-weight:600;"
+            "color:" + cor_nom + ";letter-spacing:.06em;\">"
+            + part["nome"] + badge
+            + "</div>"
+            "<div style=\"font-size:9px;color:#3a4a6a;margin-top:1px;\">init " + str(part["iniciativa"]) + "</div>"
+            + conds
+            + "</div>"
+            "<div style=\"padding-top:2px;\">" + (barras if barras else sem_ficha) + "</div>"
+            "</div>"
+        )
 
-    st.markdown("".join(linhas), unsafe_allow_html=True)
+    st.html("".join(linhas))
