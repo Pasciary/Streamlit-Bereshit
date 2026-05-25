@@ -19,9 +19,11 @@ def mostrar():
         st.error(dados["erro"])
         return
 
-    # métrica
-    cols = st.columns(5)
-    cols[0].metric("📜 Fichas", dados["total_fichas"])
+    st.markdown(f"""
+    <div style='font-size:11px;letter-spacing:.08em;color:#5a4a40;padding:2px 0 10px;'>
+        📜 <span style='color:#8a7a6a;'>{dados["total_fichas"]} fichas ativas</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.divider()
 
@@ -31,7 +33,6 @@ def mostrar():
         st.markdown("""<div class='hk-section-title'>Personagens</div>""", unsafe_allow_html=True)
         fichas = dados.get("fichas", [])
 
-        # mestre vê todos, jogador só a própria
         if not eh_mestre:
             ficha_id_proprio = usuario.get("ficha_id")
             fichas = [f for f in fichas if f["id"] == ficha_id_proprio] if ficha_id_proprio else []
@@ -71,11 +72,37 @@ def mostrar():
     with col2:
         st.markdown("""<div class='hk-section-title'>Últimas Rolagens</div>""", unsafe_allow_html=True)
         ultimas = dados.get("ultimas_rolagens", [])
-        if not ultimas:
-            st.info("Nenhuma rolagem ainda.")
-        for r in reversed(ultimas):
-            badge = "🌟" if r.get("critico") else "💀" if r.get("falha_critica") else "🎲"
-            with st.container():
+
+        # ── filtros ──
+        personagens = sorted(set(r["personagem"] for r in ultimas))
+        f_col1, f_col2 = st.columns([3, 2])
+        with f_col1:
+            filtro_personagem = st.selectbox(
+                "personagem",
+                ["Todos"] + personagens,
+                key="dash_filtro_pers",
+                label_visibility="collapsed",
+            )
+        with f_col2:
+            ordem = st.selectbox(
+                "ordem",
+                ["Mais recente", "Mais antigo"],
+                key="dash_filtro_ordem",
+                label_visibility="collapsed",
+            )
+
+        # ── aplicar filtros ──
+        rolagens = ultimas if filtro_personagem == "Todos" else [
+            r for r in ultimas if r["personagem"] == filtro_personagem
+        ]
+        if ordem == "Mais antigo":
+            rolagens = list(reversed(rolagens))
+
+        if not rolagens:
+            st.info("Nenhuma rolagem encontrada.")
+        else:
+            for r in rolagens:
+                badge = "🌟" if r.get("critico") else "💀" if r.get("falha_critica") else "🎲"
                 st.markdown(f"""
                 <div class='hk-card' style='margin-bottom:6px;'>
                     <div style='font-size:11px;color:#6a5a40;'>{badge} {r['personagem']} · {r['dado']}</div>

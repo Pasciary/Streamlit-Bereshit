@@ -322,5 +322,5 @@ def dashboard():
         "falhas_criticas": falhas,
         "media_rolagens": media,
         "fichas": copy.deepcopy(fichas),
-        "ultimas_rolagens": list(reversed(logs[-5:])),
+        "ultimas_rolagens": list(reversed(logs[-30:])),
     }
