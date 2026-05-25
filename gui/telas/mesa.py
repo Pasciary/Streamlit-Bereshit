@@ -1,5 +1,4 @@
 import streamlit as st
-import random
 
 from gui import client
 from gui.components.status_bar import show_bloco_status, show_status_bar
@@ -76,17 +75,17 @@ def _modal_rolar_dados(usuario):
             qtd_val    = int(st.session_state["rolagem_qtd"])
             mod_val    = int(st.session_state["rolagem_mod"])
             motivo_val = st.session_state["rolagem_motivo"]
-            lados      = int(dado_val[1:])
-            resultados = [random.randint(1, lados) for _ in range(qtd_val)]
-            total      = sum(resultados) + mod_val
-            critico    = dado_val == "d20" and resultados[0] == 20
-            falha      = dado_val == "d20" and resultados[0] == 1
             nome = personagem_ativo["nome"] if personagem_ativo else usuario.get("nome", "Anônimo")
-            client.rolar_dados(dado=dado_val, quantidade=qtd_val, modificador=mod_val,
+            entrada = client.rolar_dados(dado=dado_val, quantidade=qtd_val, modificador=mod_val,
                 ficha_id=personagem_ativo["id"] if personagem_ativo else None,
                 personagem=nome, motivo=motivo_val)
-            resultado_atual = {"total": total, "resultados": resultados,
-                               "mod": mod_val, "critico": critico, "falha": falha}
+            resultado_atual = {
+                "total":     entrada["total"],
+                "resultados": entrada["resultados"],
+                "mod":       mod_val,
+                "critico":   entrada["critico"],
+                "falha":     entrada["falha_critica"],
+            }
             st.session_state["_ultimo_resultado"] = resultado_atual
     with cs:
         if st.button("⭐ Salvar novo preset", use_container_width=True):
