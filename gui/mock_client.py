@@ -73,6 +73,24 @@ def criar_ficha(dados):
     tem_magia = dados["classe"] in [
         "Mago", "Clérigo", "Druida", "Bardo", "Feiticeiro", "Bruxo", "Paladino", "Ranger",
     ]
+    sangue_max  = max(3, hp_max // 5)
+    sanidade_max = max(8, 10 + mods.get("sabedoria", 0))
+    vigor_max    = max(2, 2 + mods.get("constituicao", 0))
+    status_base = {
+        "vida":     {"atual": hp_max,      "maximo": hp_max},
+        "sangue":   {"atual": sangue_max,  "maximo": sangue_max},
+        "sanidade": {"atual": sanidade_max,"maximo": sanidade_max},
+        "vigor":    {"atual": vigor_max,   "maximo": vigor_max},
+    }
+    if tem_magia:
+        mana_max = max(4, 4 + mods.get("inteligencia", 0) + mods.get("sabedoria", 0))
+        status_base["mana"] = {"atual": mana_max, "maximo": mana_max}
+    if dados["classe"] == "Monge":
+        ki_max = max(2, 2 + mods.get("sabedoria", 0))
+        status_base["ki"] = {"atual": ki_max, "maximo": ki_max}
+    if dados["classe"] in ["Mago", "Feiticeiro", "Bruxo"]:
+        arcana_max = max(2, 2 + mods.get("inteligencia", 0))
+        status_base["arcana"] = {"atual": arcana_max, "maximo": arcana_max}
     ficha = {
         "id": ficha_id,
         "nome": dados["nome"],
@@ -97,7 +115,7 @@ def criar_ficha(dados):
         "slots_usados": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0} if tem_magia else {},
         "condicoes": [],
         "criado_em": datetime.now().isoformat(),
-        "status": {"vida": {"atual": hp_max, "maximo": hp_max}},
+        "status": status_base,
     }
     _store["fichas"][ficha_id] = ficha
     _store["inventarios"][ficha_id] = []
