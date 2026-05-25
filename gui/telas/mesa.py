@@ -24,6 +24,8 @@ def mostrar():
 
     with col_status:
         _render_personagem_ativo(ativo, fichas)
+        st.divider()
+        _render_rolagem(usuario, fichas)
 
     with col_init:
         if combate.get("ativa"):
@@ -35,8 +37,6 @@ def mostrar():
                 st.info("Aguardando o mestre iniciar o combate...")
 
     with col_dado:
-        _render_rolagem(usuario, fichas)
-        st.divider()
         _render_log()
 
     if combate.get("ativa"):
