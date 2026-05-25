@@ -1,7 +1,7 @@
 import streamlit as st
 
 from gui import client
-from gui.components.status_bar import show_status_bar
+from gui.components.status_bar import show_bloco_status
 
 def mostrar():
     usuario   = st.session_state.get("usuario", {})
@@ -43,9 +43,8 @@ def mostrar():
                 status = f.get("status", {})
                 if "vida" not in status:
                     status["vida"] = {"atual": f.get("hp_atual", 0), "maximo": f.get("hp_max", 1)}
-                for key in ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]:
-                    if key in status:
-                        show_status_bar(key, status[key]["atual"], status[key]["maximo"])
+                f["status"] = status
+                show_bloco_status(f, colunas=2)
 
                 c_a, c_b = st.columns(2)
                 with c_a:
