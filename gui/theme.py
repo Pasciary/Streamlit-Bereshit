@@ -1,11 +1,11 @@
-# Paleta de cores
-BG_DEEP    = "#07070f"
-BG_DARK    = "#0a0a12"
-BG_CARD    = "#0d0d1a"
-BG_ITEM    = "#0a0a14"
+# Paleta de cores — tons quentes (como as barras de status)
+BG_DEEP    = "#070706"
+BG_DARK    = "#0c0b09"
+BG_CARD    = "#131110"
+BG_ITEM    = "#0f0d0b"
 
-BORDER_DIM    = "#1a1a2a"
-BORDER_MED    = "#2a2a3a"
+BORDER_DIM    = "#1e1b14"
+BORDER_MED    = "#2e2820"
 BORDER_GOLD   = "#3a3020"
 BORDER_GOLD2  = "#5a4a30"
 

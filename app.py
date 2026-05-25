@@ -1,3 +1,12 @@
+import os
+
+# Força paleta quente antes de qualquer import do Streamlit
+os.environ.setdefault("STREAMLIT_THEME_BASE", "dark")
+os.environ.setdefault("STREAMLIT_THEME_BACKGROUND_COLOR", "#0c0b09")
+os.environ.setdefault("STREAMLIT_THEME_SECONDARY_BACKGROUND_COLOR", "#131110")
+os.environ.setdefault("STREAMLIT_THEME_TEXT_COLOR", "#c8b89a")
+os.environ.setdefault("STREAMLIT_THEME_PRIMARY_COLOR", "#5a4a30")
+
 import streamlit as st
 
 from gui import client
