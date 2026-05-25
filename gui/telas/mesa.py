@@ -2,7 +2,7 @@ import streamlit as st
 import random, time
 
 from gui import client
-from gui.components.status_bar import show_status_bar
+from gui.components.status_bar import show_bloco_status, show_status_bar
 
 
 def mostrar():
@@ -20,7 +20,6 @@ def mostrar():
     ativo   = client.personagem_ativo_turno()
     fichas  = client.listar_fichas()
 
-    # ── 3 COLUNAS PRINCIPAIS ─────────────────
     col_status, col_init, col_dado = st.columns([2, 1.5, 1.5])
 
     with col_status:
@@ -37,9 +36,12 @@ def mostrar():
 
     with col_dado:
         _render_rolagem(usuario, fichas)
+        st.divider()
+        _render_log()
 
-    st.divider()
-    _render_log()
+    if combate.get("ativa"):
+        st.divider()
+        _render_panorama(combate, fichas)
 
     intervalo = 3 if combate.get("ativa") else 8
     time.sleep(intervalo)
@@ -48,54 +50,48 @@ def mostrar():
 
 def _render_personagem_ativo(ativo, fichas):
     st.markdown("<div class='hk-section-title'>Personagem no Turno Atual</div>", unsafe_allow_html=True)
-
     part = ativo.get("ativo") if ativo else None
 
     if not part:
         st.markdown("""
         <div class='hk-card' style='text-align:center;'>
-            <div style='font-family:Cinzel,serif;font-size:12px;color:#5a4a30;letter-spacing:.15em;'>— NENHUM COMBATE ATIVO —</div>
+            <div style='font-family:Cinzel,serif;font-size:12px;color:#5a4a30;letter-spacing:.15em;'>
+                — NENHUM COMBATE ATIVO —
+            </div>
         </div>
         """, unsafe_allow_html=True)
         return
 
-    ficha_ativa = next((f for f in fichas if f["nome"] == part.get("nome")), None)
     rodada = ativo.get("rodada", 1)
     icone  = "👑" if part.get("tipo") == "jogador" else "👹"
 
-    # cabeçalho compacto
     st.markdown(f"""
-    <div class='hk-card' style='border-color:#5a4a30;background:#0d0f0a;padding:8px 12px;'>
-        <div style='display:flex;justify-content:space-between;align-items:center;'>
-            <div>
-                <div style='font-size:9px;letter-spacing:.16em;color:#5a4a30;font-family:Cinzel,serif;'>
-                    RODADA {rodada}
-                </div>
-                <div style='font-family:Cinzel,serif;font-size:16px;font-weight:700;
-                            letter-spacing:.2em;color:#c8b89a;margin-top:2px;'>
-                    {part.get('nome','?').upper()}
-                </div>
-                <div style='font-size:10px;color:#6a5a40;'>init {part.get('iniciativa','?')}</div>
-            </div>
-            <div style='font-size:28px;'>{icone}</div>
-        </div>
+    <div style='font-size:9px;letter-spacing:.16em;color:#5a4a30;font-family:Cinzel,serif;margin-bottom:4px;'>
+        RODADA {rodada} &nbsp;·&nbsp; init {part.get('iniciativa','?')} &nbsp;{icone}
     </div>
     """, unsafe_allow_html=True)
 
-    # todas as barras de status (empilhadas, largura total)
+    ficha_ativa = next((f for f in fichas if f["nome"] == part.get("nome")), None)
+
     if ficha_ativa:
         status = ficha_ativa.get("status", {})
         if "vida" not in status:
             status["vida"] = {"atual": ficha_ativa.get("hp_atual", 0), "maximo": ficha_ativa.get("hp_max", 1)}
-        for tipo in ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]:
-            if tipo in status:
-                s = status[tipo]
-                show_status_bar(tipo, s["atual"], s["maximo"], s.get("variacao"))
+        ficha_ativa["status"] = status
+        show_bloco_status(ficha_ativa, colunas=1)
+    else:
+        st.markdown(f"""
+        <div class='hk-card' style='border-color:#5a4a30;'>
+            <div style='font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.2em;color:#c8b89a;'>
+                {part.get('nome','?').upper()}
+            </div>
+            <div style='font-size:10px;color:#6a5a40;'>Sem ficha registrada</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def _render_combate_ativo(combate, ativo, fichas, eh_mestre):
     st.markdown("<div class='hk-section-title'>Ordem de Iniciativa</div>", unsafe_allow_html=True)
-
     turno_atual = combate.get("turno_atual", 0)
     for i, part in enumerate(combate.get("iniciativa", [])):
         eh_turno = i == turno_atual
@@ -103,13 +99,11 @@ def _render_combate_ativo(combate, ativo, fichas, eh_mestre):
         cor_brd = "#2a4a2a" if eh_turno else "#1a1a2a"
         cor_txt = "#80d080" if eh_turno else "#6a7aaa"
         icone   = "●" if eh_turno else "○"
-
         st.markdown(f"""
         <div style='display:flex;align-items:center;gap:10px;padding:7px 12px;
              background:{cor_bg};border:0.5px solid {cor_brd};border-radius:6px;margin-bottom:4px;'>
             <div style='color:{cor_txt};font-size:10px;'>{icone}</div>
-            <div style='flex:1;font-size:13px;color:{cor_txt};
-                        font-weight:{"600" if eh_turno else "400"};'>{part['nome']}</div>
+            <div style='flex:1;font-size:13px;color:{cor_txt};font-weight:{"600" if eh_turno else "400"};'>{part['nome']}</div>
             <div style='font-size:11px;color:#3a4a6a;'>init {part['iniciativa']}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -128,10 +122,8 @@ def _render_combate_ativo(combate, ativo, fichas, eh_mestre):
 
 def _render_iniciar_combate(fichas):
     st.markdown("<div class='hk-section-title'>Iniciar Combate</div>", unsafe_allow_html=True)
-
     with st.expander("⚔️ Configurar participantes"):
         participantes = []
-
         st.write("**Personagens:**")
         for f in fichas:
             c1, c2 = st.columns([3, 1])
@@ -157,9 +149,7 @@ def _render_iniciar_combate(fichas):
 
 def _render_rolagem(usuario, fichas):
     st.markdown("<div class='hk-section-title'>Rolar Dados</div>", unsafe_allow_html=True)
-
     personagem_ativo = st.session_state.get("personagem_ativo")
-
     dado   = st.selectbox("Dado", ["d4", "d6", "d8", "d10", "d12", "d20", "d100"])
     qtd    = st.number_input("Qtd", 1, 20, 1)
     mod    = st.number_input("Mod", -10, 20, 0)
@@ -171,14 +161,10 @@ def _render_rolagem(usuario, fichas):
         total      = sum(resultados) + int(mod)
         critico    = dado == "d20" and resultados[0] == 20
         falha      = dado == "d20" and resultados[0] == 1
-
         nome_personagem = personagem_ativo["nome"] if personagem_ativo else usuario.get("nome", "Anônimo")
-        client.rolar_dados(
-            dado=dado, quantidade=int(qtd), modificador=int(mod),
+        client.rolar_dados(dado=dado, quantidade=int(qtd), modificador=int(mod),
             ficha_id=personagem_ativo["id"] if personagem_ativo else None,
-            personagem=nome_personagem, motivo=motivo,
-        )
-
+            personagem=nome_personagem, motivo=motivo)
         if critico:
             st.success(f"🌟 CRÍTICO! **{total}** ({resultados} +{mod})")
         elif falha:
@@ -188,26 +174,60 @@ def _render_rolagem(usuario, fichas):
 
 
 def _render_log():
-    st.markdown("<div class='hk-section-title'>Log de Dados</div>", unsafe_allow_html=True)
+    st.markdown("<div class='hk-section-title'>Últimas Rolagens</div>", unsafe_allow_html=True)
     logs = client.log_dados()
     if not logs:
         st.info("Nenhuma rolagem ainda.")
         return
-
-    cols = st.columns(4)
-    for idx, r in enumerate(logs[:12]):
+    for r in logs[:8]:
         badge = "🌟" if r.get("critico") else "💀" if r.get("falha_critica") else "🎲"
-        cor   = "#60d080" if r.get("critico") else "#d06060" if r.get("falha_critica") else "#c8b89a"
-        with cols[idx % 4]:
-            st.markdown(f"""
-            <div class='hk-card' style='margin-bottom:5px;padding:7px 10px;'>
-                <div style='font-size:10px;color:#5a4a30;'>{badge} {r['personagem']} · {r['dado']}</div>
-                <div style='font-family:Cinzel,serif;font-size:20px;font-weight:600;color:{cor};'>{r['total']}</div>
-                {'<div style="font-size:9px;color:#6a5a40;">'+r['motivo']+'</div>' if r.get('motivo') else ''}
-                <div style='font-size:9px;color:#3a3a4a;'>{r.get('hora','')}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
+        st.markdown(f"""
+        <div class='hk-card' style='margin-bottom:6px;'>
+            <div style='font-size:11px;color:#6a5a40;'>{badge} {r['personagem']} · {r['dado']}</div>
+            <div style='font-size:22px;font-weight:500;color:#c8b89a;font-family:Cinzel,serif;'>{r['total']}</div>
+            {'<div style="font-size:10px;color:#5a4a30;">'+r['motivo']+'</div>' if r.get('motivo') else ''}
+        </div>
+        """, unsafe_allow_html=True)
     if st.button("🗑️ Limpar log", use_container_width=True):
         client.limpar_log()
         st.rerun()
+
+
+def _render_panorama(combate, fichas):
+    st.markdown("<div class='hk-section-title'>Panorama do Combate</div>", unsafe_allow_html=True)
+    participantes = combate.get("iniciativa", [])
+    if not participantes:
+        return
+    turno_atual = combate.get("turno_atual", 0)
+    cols = st.columns(len(participantes))
+    for i, part in enumerate(participantes):
+        eh_turno = i == turno_atual
+        borda = "#2a4a2a" if eh_turno else "#1a1a2a"
+        bg    = "#0d1a0d" if eh_turno else "#0a0a12"
+        cor   = "#80d080" if eh_turno else "#c8b89a"
+        icone = "👑" if part.get("tipo") == "jogador" else "👹"
+        with cols[i]:
+            st.markdown(f"""
+            <div style='background:{bg};border:1px solid {borda};border-radius:6px;
+                        padding:8px;text-align:center;margin-bottom:6px;'>
+                <div style='font-size:9px;color:#5a4a30;letter-spacing:.1em;'>
+                    {"● TURNO" if eh_turno else f"init {part['iniciativa']}"}
+                </div>
+                <div style='font-family:Cinzel,serif;font-size:11px;font-weight:600;
+                            color:{cor};margin:4px 0;letter-spacing:.08em;'>
+                    {part['nome'].upper()}
+                </div>
+                <div style='font-size:14px;'>{icone}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            ficha = next((f for f in fichas if f["nome"] == part.get("nome")), None)
+            if ficha:
+                status = ficha.get("status", {})
+                vida   = status.get("vida", {})
+                if not vida:
+                    vida = {"atual": ficha.get("hp_atual", 0), "maximo": ficha.get("hp_max", 1)}
+                show_status_bar("vida", vida["atual"], vida["maximo"])
+            else:
+                hp = part.get("hp", "?")
+                hp_max = part.get("hp_max", hp)
+                st.markdown(f"<div style='font-size:11px;color:#6a5a40;text-align:center;padding:4px;'>HP {hp} / {hp_max}</div>", unsafe_allow_html=True)
