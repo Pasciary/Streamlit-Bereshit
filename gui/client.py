@@ -194,6 +194,10 @@ else:
         def vincular_ficha(usuario_id, ficha_id):
             return _post(f"/auth/vincular-ficha?usuario_id={usuario_id}&ficha_id={ficha_id}")
 
+        @staticmethod
+        def listar_campanhas_usuario(usuario_id):
+            return _get(f"/campanhas?usuario_id={usuario_id}")
+
 
 # reexporta funções para `from gui import client` / `client.login(...)`
 login = _impl.login
@@ -228,5 +232,6 @@ deletar_nota = _impl.deletar_nota
 dashboard = _impl.dashboard
 personagem_ativo_turno = _impl.personagem_ativo_turno
 vincular_ficha = _impl.vincular_ficha
+listar_campanhas_usuario = _impl.listar_campanhas_usuario
 
 MOCK_ATIVO = _use_mock()

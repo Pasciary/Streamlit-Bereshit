@@ -2,7 +2,7 @@ import streamlit as st
 
 from gui import client
 from gui.theme import GLOBAL_CSS
-from gui.telas import login, dashboard, fichas, ficha_detalhe, mesa
+from gui.telas import login, dashboard, fichas, ficha_detalhe, mesa, selecao_campanha
 
 st.set_page_config(
     page_title="Bereshit",
@@ -36,6 +36,12 @@ if not isinstance(usuario, dict):
     st.session_state.clear()
     st.rerun()
 
+# ── GATE DE CAMPANHA ─────────────────────
+if not st.session_state.get("campanha_ativa"):
+    selecao_campanha.mostrar()
+    st.stop()
+
+campanha_ativa = st.session_state.get("campanha_ativa", {})
 eh_mestre = usuario.get("role") == "mestre"
 
 # ── SIDEBAR ──────────────────────────────
@@ -46,6 +52,8 @@ with st.sidebar:
         <div style='font-family:Cinzel,serif;font-size:14px;letter-spacing:.18em;color:#c8b89a;font-weight:700;'>BERESHIT</div>
         <div style='font-size:12px;color:#5a4a30;letter-spacing:.06em;margin-top:2px;'>בְּרֵאשִׁית</div>
         <div style='font-size:9px;color:#3a3a5a;letter-spacing:.06em;margin-top:2px;'>v0.3 · protótipo</div>
+        <div style='font-size:10px;color:#6a5a40;margin-top:8px;padding-top:6px;
+                    border-top:1px solid #1a1a2a;'>{campanha_ativa.get('nome','')}</div>
     </div>
     <div style='font-size:9px;letter-spacing:.14em;color:#5a4a30;margin:0 0 6px 4px;'>
         {'— MESTRE —' if eh_mestre else '— JOGADOR —'}
@@ -74,6 +82,10 @@ with st.sidebar:
         <div style='font-size:10px;color:#5a4a30;'>{'Mestre de Jogo' if eh_mestre else 'Jogador'}</div>
     </div>
     """, unsafe_allow_html=True)
+    if st.button("🔄 Trocar Campanha", use_container_width=True):
+        del st.session_state["campanha_ativa"]
+        st.session_state.tela = "dashboard"
+        st.rerun()
     if st.button("🚪 Sair", use_container_width=True):
         st.session_state.clear()
         st.rerun()

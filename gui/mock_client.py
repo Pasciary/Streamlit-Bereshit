@@ -33,6 +33,20 @@ def vincular_ficha(usuario_id, ficha_id):
     return {k: v for k, v in u.items() if k != "senha"}
 
 
+# CAMPANHAS
+def listar_campanhas_usuario(usuario_id):
+    resultado = []
+    for c in _store["campanhas"].values():
+        for m in c["membros"]:
+            if m["usuario_id"] == usuario_id:
+                camp = copy.deepcopy(c)
+                camp["minha_role"] = m["role"]
+                camp["minha_ficha_id"] = m.get("ficha_id")
+                resultado.append(camp)
+                break
+    return resultado
+
+
 # FICHAS
 def listar_fichas():
     return list(_store["fichas"].values())
