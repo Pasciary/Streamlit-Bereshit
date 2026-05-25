@@ -94,11 +94,23 @@ def mostrar():
             st.info("Nenhuma rolagem encontrada.")
         else:
             for r in rolagens:
-                badge = "🌟" if r.get("critico") else "💀" if r.get("falha_critica") else "🎲"
+                badge      = "🌟" if r.get("critico") else "💀" if r.get("falha_critica") else "🎲"
+                resultados = r.get("resultados", [r.get("total")])
+                res_str    = " / ".join(str(x) for x in resultados)
+                mod        = r.get("modificador", 0)
+                total      = r.get("total", "?")
+                if mod != 0:
+                    mod_txt = f"+{mod}" if mod > 0 else str(mod)
+                    detalhe = f"= {total} ({mod_txt})"
+                elif len(resultados) > 1:
+                    detalhe = f"= {total}"
+                else:
+                    detalhe = ""
                 st.markdown(
                     "<div class='hk-card' style='margin-bottom:6px;'>"
                     "<div style='font-size:11px;color:#6a5a40;'>" + badge + " " + r["personagem"] + " · " + r["dado"] + "</div>"
-                    "<div style='font-size:22px;font-weight:500;color:#c8b89a;font-family:Cinzel,serif;'>" + str(r["total"]) + "</div>"
+                    "<div style='font-size:22px;font-weight:500;color:#c8b89a;font-family:Cinzel,serif;'>" + res_str + "</div>"
+                    + ("<div style='font-size:10px;color:#7a6a50;'>" + detalhe + "</div>" if detalhe else "")
                     + ("<div style='font-size:10px;color:#5a4a30;'>" + r["motivo"] + "</div>" if r.get("motivo") else "")
                     + "</div>",
                     unsafe_allow_html=True,
