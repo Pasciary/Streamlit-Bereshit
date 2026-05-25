@@ -1,7 +1,7 @@
 import streamlit as st
 
 from gui import client
-from gui.components.status_bar import show_status_bar
+from gui.components.status_bar import show_bloco_status
 
 RACAS    = ["Humano","Elfo","Anão","Halfling","Tiefling","Draconato","Gnomo","Meio-Elfo","Meio-Orc"]
 CLASSES  = ["Bárbaro","Bardo","Bruxo","Clérigo","Druida","Feiticeiro","Guerreiro","Ladino","Mago","Monge","Paladino","Ranger"]
@@ -65,12 +65,10 @@ def _listar_fichas(eh_mestre, usuario):
             """, unsafe_allow_html=True)
 
             status = f.get("status", {})
-            # garante que vida sempre aparece (fallback hp_atual/hp_max)
             if "vida" not in status:
                 status["vida"] = {"atual": f.get("hp_atual", 0), "maximo": f.get("hp_max", 1)}
-            for key in ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]:
-                if key in status:
-                    show_status_bar(key, status[key]["atual"], status[key]["maximo"])
+            f["status"] = status
+            show_bloco_status(f, colunas=3)
 
             if f.get("condicoes"):
                 conds = " ".join([f"<span class='hk-badge hk-badge-warn'>{c}</span>" for c in f["condicoes"]])

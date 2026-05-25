@@ -4,6 +4,7 @@ Componente de barra de status estilo Hollow Knight para o sistema RPG.
 Use show_status_bar() no Streamlit — SVG via st.markdown quebra o front (erro React).
 """
 
+import math
 import streamlit.components.v1 as components
 
 # ─────────────────────────────────────────
@@ -221,22 +222,30 @@ def show_status_bar(tipo: str, atual: int, maximo: int, variacao: int = None, he
     _html_doc(render_status_bar(tipo, atual, maximo, variacao), height=height)
 
 
-def show_bloco_status(ficha: dict, height: int = 420) -> None:
+def show_bloco_status(ficha: dict, colunas: int = 2, height: int = 420) -> None:
     nome = ficha.get("nome", "Personagem")
     status = ficha.get("status", {})
     ordem = ["vida", "sanidade", "sangue", "vigor", "mana", "ki", "arcana"]
-    barras = ""
+    cells = []
     for tipo in ordem:
         dados = status.get(tipo)
         if dados:
-            barras += render_status_bar(
+            bar_html = render_status_bar(
                 tipo=tipo,
                 atual=dados.get("atual", 0),
                 maximo=dados.get("maximo", 1),
                 variacao=dados.get("variacao"),
             )
-    n = max(1, barras.count("hk-painel"))
-    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{barras}", height=max(height, 108 * n + 40))
+            cells.append(f"<div style='min-width:0'>{bar_html}</div>")
+    if not cells:
+        return
+    rows = math.ceil(len(cells) / colunas)
+    grid = (
+        f"<div style='display:grid;grid-template-columns:repeat({colunas},1fr);gap:4px 8px;'>"
+        + "".join(cells)
+        + "</div>"
+    )
+    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{grid}", height=max(height, rows * 115 + 60))
 
 
 # ─────────────────────────────────────────
