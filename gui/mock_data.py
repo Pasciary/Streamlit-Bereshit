@@ -30,6 +30,83 @@ USUARIOS = {
         "role": "jogador",
         "ficha_id": "e5f6g7h8",
     },
+    "zeny": {
+        "id": "zeny",
+        "nome": "Zeny",
+        "senha": "002502",
+        "role": "jogador",
+        "ficha_id": None,
+    },
+    "duda": {
+        "id": "duda",
+        "nome": "Duda",
+        "senha": "1234",
+        "role": "jogador",
+        "ficha_id": None,
+    },
+    "leo": {
+        "id": "leo",
+        "nome": "Leo",
+        "senha": "1234",
+        "role": "jogador",
+        "ficha_id": None,
+    },
+    "marquinhos": {
+        "id": "marquinhos",
+        "nome": "Marquinhos",
+        "senha": "1234",
+        "role": "jogador",
+        "ficha_id": None,
+    },
+}
+
+# ── campanhas ──────────────────────────────────────────────────────────────
+CAMPANHAS = {
+    "camp01": {
+        "id": "camp01",
+        "nome": "A Maldição de Ironthorn",
+        "descricao": "Uma maldição ancestral ameaça a cidade mineira de Ironthorn. Heróis são convocados para desvendar o mistério.",
+        "criado_em": "2026-05-01",
+        "membros": [
+            {"usuario_id": "zeny",       "role": "mestre",  "ficha_id": None},
+            {"usuario_id": "duda",       "role": "jogador", "ficha_id": None},
+            {"usuario_id": "leo",        "role": "jogador", "ficha_id": None},
+            {"usuario_id": "marquinhos", "role": "jogador", "ficha_id": None},
+        ],
+    },
+    "camp02": {
+        "id": "camp02",
+        "nome": "Sombras de Arendel",
+        "descricao": "O reino de Arendel mergulha em trevas após o desaparecimento do rei. Uma conspiração se desenrola nas sombras.",
+        "criado_em": "2026-05-08",
+        "membros": [
+            {"usuario_id": "zeny", "role": "mestre",  "ficha_id": None},
+            {"usuario_id": "duda", "role": "jogador", "ficha_id": None},
+            {"usuario_id": "leo",  "role": "jogador", "ficha_id": None},
+        ],
+    },
+    "camp03": {
+        "id": "camp03",
+        "nome": "O Último Oráculo",
+        "descricao": "O último oráculo vivo guarda segredos que podem destruir o mundo. Forças opostas correm para encontrá-lo.",
+        "criado_em": "2026-05-15",
+        "membros": [
+            {"usuario_id": "duda",       "role": "mestre",  "ficha_id": None},
+            {"usuario_id": "zeny",       "role": "jogador", "ficha_id": None},
+            {"usuario_id": "marquinhos", "role": "jogador", "ficha_id": None},
+        ],
+    },
+    "camp04": {
+        "id": "camp04",
+        "nome": "Crônicas de Hallownest",
+        "descricao": "A campanha original — explorando as ruínas do antigo reino de Hallownest e seus segredos enterrados.",
+        "criado_em": "2026-04-15",
+        "membros": [
+            {"usuario_id": "mestre",   "role": "mestre",  "ficha_id": None},
+            {"usuario_id": "jogador1", "role": "jogador", "ficha_id": "a1b2c3d4"},
+            {"usuario_id": "jogador2", "role": "jogador", "ficha_id": "e5f6g7h8"},
+        ],
+    },
 }
 
 # ── catálogos ────────────────────────────────────────────────────────────
@@ -255,6 +332,7 @@ def seed_store():
     import copy
     return {
         "usuarios": copy.deepcopy(USUARIOS),
+        "campanhas": copy.deepcopy(CAMPANHAS),
         "fichas": {
             FICHA_GUERREIRO["id"]: copy.deepcopy(FICHA_GUERREIRO),
             FICHA_MAGO["id"]: copy.deepcopy(FICHA_MAGO),
