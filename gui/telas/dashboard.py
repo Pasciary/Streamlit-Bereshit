@@ -19,13 +19,9 @@ def mostrar():
         st.error(dados["erro"])
         return
 
-    # métricas
+    # métrica
     cols = st.columns(5)
-    cols[0].metric("📜 Fichas",      dados["total_fichas"])
-    cols[1].metric("🎲 Rolagens",    dados["total_rolagens"])
-    cols[2].metric("🌟 Críticos",    dados["criticos"])
-    cols[3].metric("💀 Falhas",      dados["falhas_criticas"])
-    cols[4].metric("📈 Média",       dados["media_rolagens"])
+    cols[0].metric("📜 Fichas", dados["total_fichas"])
 
     st.divider()
 
