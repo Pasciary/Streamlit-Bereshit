@@ -142,8 +142,18 @@ div[data-testid="metric-container"] [data-testid="stMetricValue"],
 
 /* ── alertas / info ── */
 [data-testid="stAlert"],
-.stAlert {{ background: {BG_CARD} !important; border-color: {BORDER_GOLD} !important; color: {TEXT_MID} !important; }}
-[data-testid="stAlert"] * {{ color: {TEXT_MID} !important; }}
+[data-testid="stNotification"],
+.stAlert,
+[data-baseweb="notification"] {{
+    background: {BG_CARD} !important;
+    border-color: {BORDER_GOLD} !important;
+    border-left-color: {BORDER_GOLD2} !important;
+    color: {TEXT_MID} !important;
+}}
+[data-testid="stAlert"] *,
+[data-baseweb="notification"] * {{ color: {TEXT_MID} !important; }}
+/* remove o ícone azul do st.info() */
+[data-testid="stAlert"] svg {{ color: {TEXT_DIM} !important; fill: {TEXT_DIM} !important; }}
 
 hr {{ border-color: {BORDER_DIM} !important; }}
 
