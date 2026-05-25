@@ -69,34 +69,37 @@ def mostrar():
         with f_col1:
             filtro_personagem = st.selectbox(
                 "personagem",
-                ["Todos"] + personagens,
+                ["Todos", "Última Rolagem"] + personagens,
                 key="dash_filtro_pers",
                 label_visibility="collapsed",
             )
-        with f_col2:
-            ordem = st.selectbox(
-                "ordem",
-                ["Mais recente", "Mais antigo"],
-                key="dash_filtro_ordem",
-                label_visibility="collapsed",
-            )
 
-        # ── aplicar filtros ──
-        rolagens = ultimas if filtro_personagem == "Todos" else [
-            r for r in ultimas if r["personagem"] == filtro_personagem
-        ]
-        if ordem == "Mais antigo":
-            rolagens = list(reversed(rolagens))
+        if filtro_personagem == "Última Rolagem":
+            rolagens = ultimas[:1]
+        else:
+            with f_col2:
+                ordem = st.selectbox(
+                    "ordem",
+                    ["Mais recente", "Mais antigo"],
+                    key="dash_filtro_ordem",
+                    label_visibility="collapsed",
+                )
+            rolagens = ultimas if filtro_personagem == "Todos" else [
+                r for r in ultimas if r["personagem"] == filtro_personagem
+            ]
+            if ordem == "Mais antigo":
+                rolagens = list(reversed(rolagens))
 
         if not rolagens:
             st.info("Nenhuma rolagem encontrada.")
         else:
             for r in rolagens:
                 badge = "🌟" if r.get("critico") else "💀" if r.get("falha_critica") else "🎲"
-                st.markdown(f"""
-                <div class='hk-card' style='margin-bottom:6px;'>
-                    <div style='font-size:11px;color:#6a5a40;'>{badge} {r['personagem']} · {r['dado']}</div>
-                    <div style='font-size:22px;font-weight:500;color:#c8b89a;font-family:Cinzel,serif;'>{r['total']}</div>
-                    {'<div style="font-size:10px;color:#5a4a30;">'+r['motivo']+'</div>' if r.get('motivo') else ''}
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(
+                    "<div class='hk-card' style='margin-bottom:6px;'>"
+                    "<div style='font-size:11px;color:#6a5a40;'>" + badge + " " + r["personagem"] + " · " + r["dado"] + "</div>"
+                    "<div style='font-size:22px;font-weight:500;color:#c8b89a;font-family:Cinzel,serif;'>" + str(r["total"]) + "</div>"
+                    + ("<div style='font-size:10px;color:#5a4a30;'>" + r["motivo"] + "</div>" if r.get("motivo") else "")
+                    + "</div>",
+                    unsafe_allow_html=True,
+                )
