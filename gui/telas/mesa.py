@@ -216,17 +216,26 @@ def _render_panorama(combate, fichas):
         pct    = max(0, min(100, atual / maximo * 100))
         cs, ce = STATUS_CORES.get(tipo, ("#888", "#444"))
         label  = tipo[:2].upper()
+        numero = f"{atual}/{maximo}"
         return (
-            "<div style=\"display:flex;align-items:center;gap:4px;margin-bottom:2px;\">"
-            "<span style=\"font-size:8px;color:#5a4a30;width:14px;text-align:right;flex-shrink:0;\">"
+            "<div style=\"display:flex;align-items:center;gap:5px;margin-bottom:3px;\">"
+            "<span style=\"font-size:9px;color:#7a6a50;width:16px;text-align:right;"
+            "flex-shrink:0;font-family:Cinzel,serif;letter-spacing:.04em;\">"
             + label
-            + "</span><div style=\"flex:1;height:8px;background:#0d0b08;border:1px solid #252018;"
-            "border-radius:2px;overflow:hidden;position:relative;\">"
+            + "</span>"
+            "<div style=\"flex:1;height:16px;background:#0d0b08;border:1px solid #2a2418;"
+            "border-radius:3px;overflow:hidden;position:relative;\">"
             "<div style=\"position:absolute;top:0;left:0;height:100%;width:" + f"{pct:.0f}" + "%;"
-            "background:linear-gradient(to right," + cs + "," + ce + ");\"></div>"
-            "</div><span style=\"font-size:8px;color:#6a5a40;width:32px;text-align:right;flex-shrink:0;\">"
-            + f"{atual}/{maximo}"
-            + "</span></div>"
+            "background:linear-gradient(to right," + cs + "," + ce + ");"
+            "opacity:0.85;\"></div>"
+            "<div style=\"position:absolute;inset:0;display:flex;align-items:center;"
+            "justify-content:center;font-size:9px;font-weight:600;color:#e8dcc8;"
+            "font-family:Cinzel,serif;letter-spacing:.05em;"
+            "text-shadow:0 0 4px #000,1px 1px 0 #000,-1px -1px 0 #000;\">"
+            + numero
+            + "</div>"
+            "</div>"
+            "</div>"
         )
 
     linhas = []
