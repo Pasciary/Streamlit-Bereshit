@@ -13,46 +13,53 @@ def _modal_rolar_dados(usuario):
             st.session_state[k] = v
     if "dados_presets" not in st.session_state:
         st.session_state["dados_presets"] = []
+    if "preset_sel" not in st.session_state:
+        st.session_state["preset_sel"] = "— sem preset —"
 
     personagem_ativo = st.session_state.get("personagem_ativo")
-
-    ultimo = st.session_state.get("_ultimo_resultado")
-    if ultimo:
-        if ultimo["critico"]:
-            st.success(f"🌟 CRÍTICO! **{ultimo['total']}** — {ultimo['resultados']} +{ultimo['mod']}")
-        elif ultimo["falha"]:
-            st.error(f"💀 FALHA CRÍTICA! **{ultimo['total']}** — {ultimo['resultados']}")
-        else:
-            st.info(f"🎲 **{ultimo['total']}** — {ultimo['resultados']} +{ultimo['mod']}")
-
     presets = st.session_state["dados_presets"]
+
+    # ── selectbox de presets ──────────────────────────────────────────────────
     if presets:
-        st.markdown(
-            "<div style='font-size:9px;color:#6a5a40;letter-spacing:.12em;"
-            "font-family:Cinzel,serif;margin-bottom:6px;'>PRESETS SALVOS</div>",
-            unsafe_allow_html=True,
-        )
-        for i, p in enumerate(presets):
-            pc, dc = st.columns([5, 1])
-            with pc:
-                lbl = f"{p['nome']}  ·  {p['qtd']}{p['dado']}"
-                if p["mod"] != 0:
-                    lbl += f" +{p['mod']}" if p["mod"] > 0 else f" {p['mod']}"
-                if p.get("motivo"):
-                    lbl += f"  ({p['motivo']})"
-                if st.button(lbl, key=f"preset_btn_{i}", use_container_width=True):
-                    st.session_state["rolagem_dado"]   = p["dado"]
-                    st.session_state["rolagem_qtd"]    = p["qtd"]
-                    st.session_state["rolagem_mod"]    = p["mod"]
-                    st.session_state["rolagem_motivo"] = p["motivo"]
-                    st.rerun()
-            with dc:
-                if st.button("✕", key=f"preset_del_{i}", help="Remover preset"):
-                    st.session_state["dados_presets"].pop(i)
-                    st.rerun()
+        def _aplicar_preset():
+            sel = st.session_state.get("preset_sel", "")
+            p = next((x for x in st.session_state["dados_presets"] if x["nome"] == sel), None)
+            if p:
+                st.session_state["rolagem_dado"]   = p["dado"]
+                st.session_state["rolagem_qtd"]    = p["qtd"]
+                st.session_state["rolagem_mod"]    = p["mod"]
+                st.session_state["rolagem_motivo"] = p["motivo"]
+
+        opcoes = ["— sem preset —"] + [p["nome"] for p in presets]
+        if st.session_state["preset_sel"] not in opcoes:
+            st.session_state["preset_sel"] = "— sem preset —"
+
+        preset_selecionado = st.session_state["preset_sel"]
+        idx_preset = next((i for i, p in enumerate(presets) if p["nome"] == preset_selecionado), None)
+
+        sp1, sp2, sp3 = st.columns([5, 1, 1])
+        with sp1:
+            st.selectbox("Preset salvo", opcoes, key="preset_sel",
+                         on_change=_aplicar_preset, label_visibility="collapsed")
+        with sp2:
+            if st.button("✏️", help="Sobrescrever preset com os valores do formulário",
+                         disabled=idx_preset is None, use_container_width=True):
+                presets[idx_preset] = {
+                    "nome":   presets[idx_preset]["nome"],
+                    "dado":   st.session_state["rolagem_dado"],
+                    "qtd":    int(st.session_state["rolagem_qtd"]),
+                    "mod":    int(st.session_state["rolagem_mod"]),
+                    "motivo": st.session_state["rolagem_motivo"],
+                }
+        with sp3:
+            if st.button("🗑️", help="Excluir preset selecionado",
+                         disabled=idx_preset is None, use_container_width=True):
+                presets.pop(idx_preset)
+                st.session_state["preset_sel"] = "— sem preset —"
         st.divider()
 
-    dado = st.selectbox("Dado", DADOS_OPTS, key="rolagem_dado")
+    # ── formulário ────────────────────────────────────────────────────────────
+    st.selectbox("Dado", DADOS_OPTS, key="rolagem_dado")
     cq, cm = st.columns(2)
     with cq:
         st.number_input("Qtd", min_value=1, max_value=20, key="rolagem_qtd")
@@ -60,6 +67,8 @@ def _modal_rolar_dados(usuario):
         st.number_input("Mod", min_value=-10, max_value=20, key="rolagem_mod")
     st.text_input("Motivo", placeholder="Ex: Ataque", key="rolagem_motivo")
 
+    # ── ações ─────────────────────────────────────────────────────────────────
+    resultado_atual = None
     cr, cs = st.columns([3, 2])
     with cr:
         if st.button("🎲 Rolar!", type="primary", use_container_width=True):
@@ -76,30 +85,46 @@ def _modal_rolar_dados(usuario):
             client.rolar_dados(dado=dado_val, quantidade=qtd_val, modificador=mod_val,
                 ficha_id=personagem_ativo["id"] if personagem_ativo else None,
                 personagem=nome, motivo=motivo_val)
-            st.session_state["_ultimo_resultado"] = {
-                "total": total, "resultados": resultados,
-                "mod": mod_val, "critico": critico, "falha": falha,
-            }
-            st.rerun()
+            resultado_atual = {"total": total, "resultados": resultados,
+                               "mod": mod_val, "critico": critico, "falha": falha}
+            st.session_state["_ultimo_resultado"] = resultado_atual
     with cs:
-        if st.button("⭐ Salvar preset", use_container_width=True):
+        if st.button("⭐ Salvar novo preset", use_container_width=True):
             st.session_state["_show_save_preset"] = True
-            st.rerun()
 
+    # ── resultado da rolagem ──────────────────────────────────────────────────
+    show = resultado_atual or st.session_state.get("_ultimo_resultado")
+    if show:
+        if show["critico"]:
+            st.success(f"🌟 CRÍTICO! **{show['total']}** — {show['resultados']} +{show['mod']}")
+        elif show["falha"]:
+            st.error(f"💀 FALHA CRÍTICA! **{show['total']}** — {show['resultados']}")
+        else:
+            st.info(f"🎲 **{show['total']}** — {show['resultados']} +{show['mod']}")
+
+    # ── formulário de salvar preset (abre inline, sem fechar o popup) ─────────
     if st.session_state.get("_show_save_preset"):
+        st.divider()
         nome_p = st.text_input("Nome do preset", key="novo_preset_nome",
                                placeholder="Ex: Ataque c/ espada")
-        if st.button("✔ Salvar", type="primary", key="confirm_salvar_preset"):
-            if nome_p:
-                st.session_state["dados_presets"].append({
-                    "nome":   nome_p,
-                    "dado":   st.session_state["rolagem_dado"],
-                    "qtd":    int(st.session_state["rolagem_qtd"]),
-                    "mod":    int(st.session_state["rolagem_mod"]),
-                    "motivo": st.session_state["rolagem_motivo"],
-                })
+        cc1, cc2 = st.columns([3, 1])
+        with cc1:
+            if st.button("✔ Confirmar e fechar", type="primary",
+                         key="confirm_salvar_preset", use_container_width=True):
+                if nome_p:
+                    st.session_state["dados_presets"].append({
+                        "nome":   nome_p,
+                        "dado":   st.session_state["rolagem_dado"],
+                        "qtd":    int(st.session_state["rolagem_qtd"]),
+                        "mod":    int(st.session_state["rolagem_mod"]),
+                        "motivo": st.session_state["rolagem_motivo"],
+                    })
+                    del st.session_state["_show_save_preset"]
+                    st.rerun()
+        with cc2:
+            if st.button("✕", key="cancel_preset", use_container_width=True,
+                         help="Cancelar"):
                 del st.session_state["_show_save_preset"]
-                st.rerun()
 
 
 def mostrar():
@@ -241,6 +266,7 @@ def _render_iniciar_combate(fichas):
 
 def _render_rolagem(usuario, fichas):
     if st.button("🎲 Rolar Dados", use_container_width=True, type="primary"):
+        st.session_state.pop("_show_save_preset", None)
         _modal_rolar_dados(usuario)
 
 
