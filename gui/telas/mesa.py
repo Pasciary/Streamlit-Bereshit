@@ -5,6 +5,103 @@ from gui import client
 from gui.components.status_bar import show_bloco_status, show_status_bar
 
 
+@st.dialog("🎲 Rolar Dados", width="large")
+def _modal_rolar_dados(usuario):
+    DADOS_OPTS = ["d4", "d6", "d8", "d10", "d12", "d20", "d100"]
+    for k, v in [("rolagem_dado", "d20"), ("rolagem_qtd", 1), ("rolagem_mod", 0), ("rolagem_motivo", "")]:
+        if k not in st.session_state:
+            st.session_state[k] = v
+    if "dados_presets" not in st.session_state:
+        st.session_state["dados_presets"] = []
+
+    personagem_ativo = st.session_state.get("personagem_ativo")
+
+    ultimo = st.session_state.get("_ultimo_resultado")
+    if ultimo:
+        if ultimo["critico"]:
+            st.success(f"🌟 CRÍTICO! **{ultimo['total']}** — {ultimo['resultados']} +{ultimo['mod']}")
+        elif ultimo["falha"]:
+            st.error(f"💀 FALHA CRÍTICA! **{ultimo['total']}** — {ultimo['resultados']}")
+        else:
+            st.info(f"🎲 **{ultimo['total']}** — {ultimo['resultados']} +{ultimo['mod']}")
+
+    presets = st.session_state["dados_presets"]
+    if presets:
+        st.markdown(
+            "<div style='font-size:9px;color:#6a5a40;letter-spacing:.12em;"
+            "font-family:Cinzel,serif;margin-bottom:6px;'>PRESETS SALVOS</div>",
+            unsafe_allow_html=True,
+        )
+        for i, p in enumerate(presets):
+            pc, dc = st.columns([5, 1])
+            with pc:
+                lbl = f"{p['nome']}  ·  {p['qtd']}{p['dado']}"
+                if p["mod"] != 0:
+                    lbl += f" +{p['mod']}" if p["mod"] > 0 else f" {p['mod']}"
+                if p.get("motivo"):
+                    lbl += f"  ({p['motivo']})"
+                if st.button(lbl, key=f"preset_btn_{i}", use_container_width=True):
+                    st.session_state["rolagem_dado"]   = p["dado"]
+                    st.session_state["rolagem_qtd"]    = p["qtd"]
+                    st.session_state["rolagem_mod"]    = p["mod"]
+                    st.session_state["rolagem_motivo"] = p["motivo"]
+                    st.rerun()
+            with dc:
+                if st.button("✕", key=f"preset_del_{i}", help="Remover preset"):
+                    st.session_state["dados_presets"].pop(i)
+                    st.rerun()
+        st.divider()
+
+    dado = st.selectbox("Dado", DADOS_OPTS, key="rolagem_dado")
+    cq, cm = st.columns(2)
+    with cq:
+        st.number_input("Qtd", min_value=1, max_value=20, key="rolagem_qtd")
+    with cm:
+        st.number_input("Mod", min_value=-10, max_value=20, key="rolagem_mod")
+    st.text_input("Motivo", placeholder="Ex: Ataque", key="rolagem_motivo")
+
+    cr, cs = st.columns([3, 2])
+    with cr:
+        if st.button("🎲 Rolar!", type="primary", use_container_width=True):
+            dado_val   = st.session_state["rolagem_dado"]
+            qtd_val    = int(st.session_state["rolagem_qtd"])
+            mod_val    = int(st.session_state["rolagem_mod"])
+            motivo_val = st.session_state["rolagem_motivo"]
+            lados      = int(dado_val[1:])
+            resultados = [random.randint(1, lados) for _ in range(qtd_val)]
+            total      = sum(resultados) + mod_val
+            critico    = dado_val == "d20" and resultados[0] == 20
+            falha      = dado_val == "d20" and resultados[0] == 1
+            nome = personagem_ativo["nome"] if personagem_ativo else usuario.get("nome", "Anônimo")
+            client.rolar_dados(dado=dado_val, quantidade=qtd_val, modificador=mod_val,
+                ficha_id=personagem_ativo["id"] if personagem_ativo else None,
+                personagem=nome, motivo=motivo_val)
+            st.session_state["_ultimo_resultado"] = {
+                "total": total, "resultados": resultados,
+                "mod": mod_val, "critico": critico, "falha": falha,
+            }
+            st.rerun()
+    with cs:
+        if st.button("⭐ Salvar preset", use_container_width=True):
+            st.session_state["_show_save_preset"] = True
+            st.rerun()
+
+    if st.session_state.get("_show_save_preset"):
+        nome_p = st.text_input("Nome do preset", key="novo_preset_nome",
+                               placeholder="Ex: Ataque c/ espada")
+        if st.button("✔ Salvar", type="primary", key="confirm_salvar_preset"):
+            if nome_p:
+                st.session_state["dados_presets"].append({
+                    "nome":   nome_p,
+                    "dado":   st.session_state["rolagem_dado"],
+                    "qtd":    int(st.session_state["rolagem_qtd"]),
+                    "mod":    int(st.session_state["rolagem_mod"]),
+                    "motivo": st.session_state["rolagem_motivo"],
+                })
+                del st.session_state["_show_save_preset"]
+                st.rerun()
+
+
 def mostrar():
     usuario   = st.session_state.get("usuario", {})
     eh_mestre = usuario.get("role") == "mestre"
@@ -143,93 +240,8 @@ def _render_iniciar_combate(fichas):
 
 
 def _render_rolagem(usuario, fichas):
-    DADOS_OPTS = ["d4", "d6", "d8", "d10", "d12", "d20", "d100"]
-    for k, v in [("rolagem_dado", "d20"), ("rolagem_qtd", 1), ("rolagem_mod", 0), ("rolagem_motivo", "")]:
-        if k not in st.session_state:
-            st.session_state[k] = v
-    if "dados_presets" not in st.session_state:
-        st.session_state["dados_presets"] = []
-
-    personagem_ativo = st.session_state.get("personagem_ativo")
-
-    with st.expander("🎲 Rolar Dados", expanded=False):
-        presets = st.session_state["dados_presets"]
-        if presets:
-            st.markdown(
-                "<div style='font-size:9px;color:#6a5a40;letter-spacing:.12em;"
-                "font-family:Cinzel,serif;margin-bottom:6px;'>PRESETS SALVOS</div>",
-                unsafe_allow_html=True,
-            )
-            for i, p in enumerate(presets):
-                pc, dc = st.columns([5, 1])
-                with pc:
-                    lbl = f"{p['nome']}  ·  {p['qtd']}{p['dado']} +{p['mod']}"
-                    if p.get("motivo"):
-                        lbl += f"  ({p['motivo']})"
-                    if st.button(lbl, key=f"preset_btn_{i}", use_container_width=True):
-                        st.session_state["rolagem_dado"]   = p["dado"]
-                        st.session_state["rolagem_qtd"]    = p["qtd"]
-                        st.session_state["rolagem_mod"]    = p["mod"]
-                        st.session_state["rolagem_motivo"] = p["motivo"]
-                        st.rerun()
-                with dc:
-                    if st.button("✕", key=f"preset_del_{i}", help="Remover preset"):
-                        st.session_state["dados_presets"].pop(i)
-                        st.rerun()
-            st.divider()
-
-        dado   = st.selectbox("Dado", DADOS_OPTS,
-                              index=DADOS_OPTS.index(st.session_state["rolagem_dado"]),
-                              key="rolagem_dado")
-        cq, cm = st.columns(2)
-        with cq:
-            qtd = st.number_input("Qtd", 1, 20, key="rolagem_qtd")
-        with cm:
-            mod = st.number_input("Mod", -10, 20, key="rolagem_mod")
-        motivo = st.text_input("Motivo", placeholder="Ex: Ataque", key="rolagem_motivo")
-
-        cr, cs = st.columns([3, 2])
-        with cr:
-            rolar = st.button("🎲 Rolar!", type="primary", use_container_width=True)
-        with cs:
-            if st.button("⭐ Salvar preset", use_container_width=True):
-                st.session_state["_show_save_preset"] = True
-
-        if st.session_state.get("_show_save_preset"):
-            nome_p = st.text_input("Nome do preset", key="novo_preset_nome",
-                                   placeholder="Ex: Ataque c/ espada")
-            if st.button("✔ Salvar", type="primary", key="confirm_salvar_preset"):
-                if nome_p:
-                    st.session_state["dados_presets"].append({
-                        "nome": nome_p,
-                        "dado": st.session_state["rolagem_dado"],
-                        "qtd":  int(st.session_state["rolagem_qtd"]),
-                        "mod":  int(st.session_state["rolagem_mod"]),
-                        "motivo": st.session_state["rolagem_motivo"],
-                    })
-                    del st.session_state["_show_save_preset"]
-                    st.rerun()
-
-        if rolar:
-            dado_val   = st.session_state["rolagem_dado"]
-            qtd_val    = int(st.session_state["rolagem_qtd"])
-            mod_val    = int(st.session_state["rolagem_mod"])
-            motivo_val = st.session_state["rolagem_motivo"]
-            lados      = int(dado_val[1:])
-            resultados = [random.randint(1, lados) for _ in range(qtd_val)]
-            total      = sum(resultados) + mod_val
-            critico    = dado_val == "d20" and resultados[0] == 20
-            falha      = dado_val == "d20" and resultados[0] == 1
-            nome_personagem = personagem_ativo["nome"] if personagem_ativo else usuario.get("nome", "Anônimo")
-            client.rolar_dados(dado=dado_val, quantidade=qtd_val, modificador=mod_val,
-                ficha_id=personagem_ativo["id"] if personagem_ativo else None,
-                personagem=nome_personagem, motivo=motivo_val)
-            if critico:
-                st.success(f"🌟 CRÍTICO! **{total}** ({resultados} +{mod_val})")
-            elif falha:
-                st.error(f"💀 FALHA! **{total}**")
-            else:
-                st.info(f"🎲 **{total}** ({resultados} +{mod_val})")
+    if st.button("🎲 Rolar Dados", use_container_width=True, type="primary"):
+        _modal_rolar_dados(usuario)
 
 
 def _render_log():
