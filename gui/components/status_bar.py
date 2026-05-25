@@ -5,7 +5,7 @@ Use show_status_bar() no Streamlit — SVG via st.markdown quebra o front (erro 
 """
 
 import math
-import streamlit.components.v1 as components
+import streamlit as st
 
 # ─────────────────────────────────────────
 # CONFIGURAÇÃO DOS STATUS
@@ -206,8 +206,8 @@ HK_CSS_RULES = """
 HK_CSS = f"<style>{HK_CSS_RULES}</style>"
 
 
-def _html_doc(body: str, height: int) -> None:
-    """Renderiza HTML+SVG em iframe isolado (evita crash do React no Streamlit)."""
+def _html_doc(body: str, height: int = 0) -> None:
+    """Renderiza HTML+SVG via st.html (substitui components.v1.html depreciado)."""
     doc = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap">
@@ -215,11 +215,11 @@ def _html_doc(body: str, height: int) -> None:
 html,body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
 {HK_CSS_RULES}
 </style></head><body>{body}</body></html>"""
-    components.html(doc, height=height, scrolling=False)
+    st.html(doc)
 
 
-def show_status_bar(tipo: str, atual: int, maximo: int, variacao: int = None, height: int = 108) -> None:
-    _html_doc(render_status_bar(tipo, atual, maximo, variacao), height=height)
+def show_status_bar(tipo: str, atual: int, maximo: int, variacao: int = None) -> None:
+    _html_doc(render_status_bar(tipo, atual, maximo, variacao))
 
 
 def show_bloco_status(ficha: dict, colunas: int = 2) -> None:
@@ -239,13 +239,12 @@ def show_bloco_status(ficha: dict, colunas: int = 2) -> None:
             cells.append(f"<div style='min-width:0'>{bar_html}</div>")
     if not cells:
         return
-    rows = math.ceil(len(cells) / colunas)
     grid = (
         f"<div style='display:grid;grid-template-columns:repeat({colunas},1fr);gap:4px 8px;'>"
         + "".join(cells)
         + "</div>"
     )
-    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{grid}", height=rows * 85 + 50)
+    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{grid}")
 
 
 # ─────────────────────────────────────────
