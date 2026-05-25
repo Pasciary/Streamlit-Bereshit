@@ -132,6 +132,45 @@ def atualizar_hp(ficha_id, hp_atual):
     return copy.deepcopy(f)
 
 
+def criar_ficha_rapida(nome, hp_max, hp_atual, ca):
+    ficha_id = str(uuid.uuid4())[:8]
+    hp_atual = max(0, min(hp_atual, hp_max))
+    sangue_max = max(1, hp_max // 5)
+    ficha = {
+        "id": ficha_id,
+        "nome": nome,
+        "raca": "Monstro",
+        "classe": "Monstro",
+        "background": "",
+        "alinhamento": "",
+        "historia": "",
+        "nivel": 1,
+        "xp": 0,
+        "xp_proximo": 0,
+        "atributos": {},
+        "modificadores": {},
+        "hp_max": hp_max,
+        "hp_atual": hp_atual,
+        "ca": ca,
+        "bonus_proficiencia": 0,
+        "iniciativa": 0,
+        "movimento": 0,
+        "tem_magia": False,
+        "slots_magia": {},
+        "slots_usados": {},
+        "condicoes": [],
+        "criado_em": datetime.now().isoformat(),
+        "status": {
+            "vida":   {"atual": hp_atual, "maximo": hp_max},
+            "sangue": {"atual": sangue_max, "maximo": sangue_max},
+        },
+    }
+    _store["fichas"][ficha_id] = ficha
+    _store["inventarios"][ficha_id] = []
+    _store["magias_conhecidas"][ficha_id] = []
+    return copy.deepcopy(ficha)
+
+
 def deletar_ficha(ficha_id):
     if ficha_id not in _store["fichas"]:
         return {"erro": "Ficha não encontrada"}

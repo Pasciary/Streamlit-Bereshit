@@ -80,6 +80,10 @@ else:
             return _patch(f"/fichas/{ficha_id}", {"hp_atual": hp_atual})
 
         @staticmethod
+        def criar_ficha_rapida(nome, hp_max, hp_atual, ca):
+            return _post("/fichas/rapida", {"nome": nome, "hp_max": hp_max, "hp_atual": hp_atual, "ca": ca})
+
+        @staticmethod
         def deletar_ficha(ficha_id):
             return _delete(f"/fichas/{ficha_id}")
 
@@ -204,6 +208,7 @@ login = _impl.login
 listar_fichas = _impl.listar_fichas
 buscar_ficha = _impl.buscar_ficha
 criar_ficha = _impl.criar_ficha
+criar_ficha_rapida = _impl.criar_ficha_rapida
 atualizar_hp = _impl.atualizar_hp
 deletar_ficha = _impl.deletar_ficha
 adicionar_condicao = _impl.adicionar_condicao

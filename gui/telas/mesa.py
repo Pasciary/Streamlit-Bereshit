@@ -126,6 +126,47 @@ def _modal_rolar_dados(usuario):
                 del st.session_state["_show_save_preset"]
 
 
+@st.dialog("📋 Criar Ficha Rápida", width="large")
+def _modal_criar_ficha(nome_inimigo):
+    for k, v in [("cf_hp_max", 10), ("cf_hp_atual", 10), ("cf_ca", 10)]:
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+    st.markdown(
+        "<div style='font-family:Cinzel,serif;font-size:13px;color:#c8b89a;"
+        "letter-spacing:.12em;margin-bottom:8px;'>"
+        + nome_inimigo.upper()
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+
+    ch, cc = st.columns(2)
+    with ch:
+        st.number_input("HP Máximo", min_value=1, max_value=9999, key="cf_hp_max")
+    with cc:
+        st.number_input("CA", min_value=1, max_value=30, key="cf_ca")
+
+    st.number_input("HP Atual", min_value=0, max_value=st.session_state["cf_hp_max"], key="cf_hp_atual")
+
+    cb1, cb2 = st.columns([3, 1])
+    with cb1:
+        if st.button("✔ Criar e fechar", type="primary", use_container_width=True):
+            client.criar_ficha_rapida(
+                nome=nome_inimigo,
+                hp_max=int(st.session_state["cf_hp_max"]),
+                hp_atual=int(st.session_state["cf_hp_atual"]),
+                ca=int(st.session_state["cf_ca"]),
+            )
+            for k in ("cf_hp_max", "cf_hp_atual", "cf_ca"):
+                st.session_state.pop(k, None)
+            st.rerun()
+    with cb2:
+        if st.button("✕", use_container_width=True, help="Cancelar"):
+            for k in ("cf_hp_max", "cf_hp_atual", "cf_ca"):
+                st.session_state.pop(k, None)
+            st.rerun()
+
+
 def mostrar():
     usuario   = st.session_state.get("usuario", {})
     eh_mestre = usuario.get("role") == "mestre"
@@ -196,14 +237,19 @@ def _render_personagem_ativo(ativo, fichas):
         ficha_ativa["status"] = status
         show_bloco_status(ficha_ativa, colunas=1)
     else:
-        st.markdown(f"""
-        <div class='hk-card' style='border-color:#5a4a30;'>
-            <div style='font-family:Cinzel,serif;font-size:16px;font-weight:700;letter-spacing:.2em;color:#c8b89a;'>
-                {part.get('nome','?').upper()}
-            </div>
-            <div style='font-size:10px;color:#6a5a40;'>Sem ficha registrada</div>
-        </div>
-        """, unsafe_allow_html=True)
+        nome_part = part.get("nome", "?")
+        st.markdown(
+            "<div class='hk-card' style='border-color:#5a4a30;'>"
+            "<div style='font-family:Cinzel,serif;font-size:16px;font-weight:700;"
+            "letter-spacing:.2em;color:#c8b89a;'>"
+            + nome_part.upper()
+            + "</div>"
+            "<div style='font-size:10px;color:#6a5a40;'>Sem ficha registrada</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        if st.button("📋 Criar Ficha", key=f"criar_ficha_{nome_part}", use_container_width=True):
+            _modal_criar_ficha(nome_part)
 
 
 def _render_combate_ativo(combate, ativo, fichas, eh_mestre):
