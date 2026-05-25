@@ -169,10 +169,10 @@ FICHA_GUERREIRO = {
     "condicoes": ["Envenenado"],
     "criado_em": "2026-05-10T14:22:00",
     "status": {
-        "vida": {"atual": 19, "maximo": 28, "variacao": -4},
+        "vida":     {"atual": 19, "maximo": 28, "variacao": -4},
+        "sangue":   {"atual": 3,  "maximo": 5},
         "sanidade": {"atual": 14, "maximo": 16},
-        "sangue": {"atual": 3, "maximo": 5},
-        "vigor": {"atual": 2, "maximo": 4},
+        "vigor":    {"atual": 2,  "maximo": 4},
     },
 }
 
@@ -204,10 +204,12 @@ FICHA_MAGO = {
     "condicoes": [],
     "criado_em": "2026-05-12T09:15:00",
     "status": {
-        "vida": {"atual": 18, "maximo": 18},
+        "vida":     {"atual": 18, "maximo": 18},
+        "sangue":   {"atual": 3,  "maximo": 3},
         "sanidade": {"atual": 20, "maximo": 20},
-        "mana": {"atual": 5, "maximo": 8, "variacao": -1},
-        "arcana": {"atual": 2, "maximo": 3},
+        "vigor":    {"atual": 2,  "maximo": 2},
+        "mana":     {"atual": 5,  "maximo": 8, "variacao": -1},
+        "arcana":   {"atual": 2,  "maximo": 3},
     },
 }
 
@@ -239,9 +241,11 @@ FICHA_LADINO = {
     "condicoes": [],
     "criado_em": "2026-05-15T18:40:00",
     "status": {
-        "vida": {"atual": 11, "maximo": 16},
-        "vigor": {"atual": 1, "maximo": 3},
-        "ki": {"atual": 0, "maximo": 2},
+        "vida":     {"atual": 11, "maximo": 16},
+        "sangue":   {"atual": 3,  "maximo": 4},
+        "sanidade": {"atual": 10, "maximo": 12},
+        "vigor":    {"atual": 1,  "maximo": 3},
+        "ki":       {"atual": 0,  "maximo": 2},
     },
 }
 

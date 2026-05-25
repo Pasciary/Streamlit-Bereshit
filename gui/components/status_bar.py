@@ -225,7 +225,7 @@ def show_status_bar(tipo: str, atual: int, maximo: int, variacao: int = None, he
 def show_bloco_status(ficha: dict, colunas: int = 2) -> None:
     nome = ficha.get("nome", "Personagem")
     status = ficha.get("status", {})
-    ordem = ["vida", "sanidade", "sangue", "vigor", "mana", "ki", "arcana"]
+    ordem = ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]
     cells = []
     for tipo in ordem:
         dados = status.get(tipo)
@@ -283,7 +283,7 @@ def render_bloco_status(ficha: dict) -> str:
     """Renderiza todas as barras de status de uma ficha completa."""
     nome   = ficha.get("nome", "Personagem")
     status = ficha.get("status", {})
-    ordem  = ["vida", "sanidade", "sangue", "vigor", "mana", "ki", "arcana"]
+    ordem  = ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]
 
     barras = ""
     for tipo in ordem:
