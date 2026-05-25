@@ -1,5 +1,5 @@
 import streamlit as st
-import random, time
+import random
 
 from gui import client
 from gui.components.status_bar import show_bloco_status, show_status_bar
@@ -16,6 +16,11 @@ def mostrar():
         if st.button("🔄 Atualizar", use_container_width=True):
             st.rerun()
 
+    _conteudo_mesa(eh_mestre, usuario)
+
+
+@st.fragment(run_every=5)
+def _conteudo_mesa(eh_mestre, usuario):
     combate = client.estado_combate()
     ativo   = client.personagem_ativo_turno()
     fichas  = client.listar_fichas()
@@ -42,10 +47,6 @@ def mostrar():
     if combate.get("ativa"):
         st.divider()
         _render_panorama(combate, fichas)
-
-    intervalo = 3 if combate.get("ativa") else 8
-    time.sleep(intervalo)
-    st.rerun()
 
 
 def _render_personagem_ativo(ativo, fichas):
