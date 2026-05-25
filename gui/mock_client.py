@@ -17,6 +17,7 @@ def _sync_status_vida(ficha):
     status["vida"] = {"atual": hp, "maximo": hp_max, "variacao": status.get("vida", {}).get("variacao")}
 
 
+# AUTH
 def login(usuario, senha):
     u = _store["usuarios"].get(usuario)
     if not u or u["senha"] != senha:
@@ -32,6 +33,7 @@ def vincular_ficha(usuario_id, ficha_id):
     return {k: v for k, v in u.items() if k != "senha"}
 
 
+# FICHAS
 def listar_fichas():
     return list(_store["fichas"].values())
 
@@ -54,20 +56,33 @@ def criar_ficha(dados):
         "Bárbaro": 12, "Monge": 8, "Bruxo": 8,
     }.get(dados["classe"], 8)
     hp_max = max(1, hp_base + mods.get("constituicao", 0))
-    tem_magia = dados["classe"] in ["Mago", "Clérigo", "Druida", "Bardo", "Feiticeiro", "Bruxo", "Paladino", "Ranger"]
+    tem_magia = dados["classe"] in [
+        "Mago", "Clérigo", "Druida", "Bardo", "Feiticeiro", "Bruxo", "Paladino", "Ranger",
+    ]
     ficha = {
-        "id": ficha_id, "nome": dados["nome"], "raca": dados["raca"], "classe": dados["classe"],
-        "background": dados["background"], "alinhamento": dados["alinhamento"],
+        "id": ficha_id,
+        "nome": dados["nome"],
+        "raca": dados["raca"],
+        "classe": dados["classe"],
+        "background": dados["background"],
+        "alinhamento": dados["alinhamento"],
         "historia": dados.get("historia", ""),
-        "nivel": 1, "xp": 0, "xp_proximo": 300,
-        "atributos": atributos, "modificadores": mods,
-        "hp_max": hp_max, "hp_atual": hp_max,
-        "ca": 10 + mods.get("destreza", 0), "bonus_proficiencia": 2,
-        "iniciativa": mods.get("destreza", 0), "movimento": 9,
+        "nivel": 1,
+        "xp": 0,
+        "xp_proximo": 300,
+        "atributos": atributos,
+        "modificadores": mods,
+        "hp_max": hp_max,
+        "hp_atual": hp_max,
+        "ca": 10 + mods.get("destreza", 0),
+        "bonus_proficiencia": 2,
+        "iniciativa": mods.get("destreza", 0),
+        "movimento": 9,
         "tem_magia": tem_magia,
         "slots_magia": {1: 2, 2: 0, 3: 0, 4: 0, 5: 0} if tem_magia else {},
         "slots_usados": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0} if tem_magia else {},
-        "condicoes": [], "criado_em": datetime.now().isoformat(),
+        "condicoes": [],
+        "criado_em": datetime.now().isoformat(),
         "status": {"vida": {"atual": hp_max, "maximo": hp_max}},
     }
     _store["fichas"][ficha_id] = ficha
@@ -129,6 +144,7 @@ def descanso(ficha_id, tipo):
     return {"erro": "Tipo de descanso inválido"}
 
 
+# INVENTÁRIO
 def listar_inventario(ficha_id):
     return _store["inventarios"].get(ficha_id, [])
 
@@ -147,6 +163,7 @@ def remover_item(ficha_id, item_id):
     return {"ok": True}
 
 
+# MAGIAS
 def listar_magias_ficha(ficha_id):
     return _store["magias_conhecidas"].get(ficha_id, [])
 
@@ -179,6 +196,7 @@ def usar_slot(ficha_id, nivel):
     return copy.deepcopy(f)
 
 
+# CATÁLOGOS
 def catalogo_itens():
     return _store["itens_catalogo"]
 
@@ -191,6 +209,7 @@ def catalogo_monstros():
     return _store["monstros_catalogo"]
 
 
+# DADOS
 def rolar_dados(dado, quantidade, modificador, ficha_id=None, personagem="Anônimo", motivo=""):
     lados = int(dado[1:])
     resultados = [random.randint(1, lados) for _ in range(quantidade)]
@@ -198,10 +217,18 @@ def rolar_dados(dado, quantidade, modificador, ficha_id=None, personagem="Anôni
     critico = dado == "d20" and resultados[0] == 20
     falha = dado == "d20" and resultados[0] == 1
     entrada = {
-        "id": str(uuid.uuid4())[:8], "ficha_id": ficha_id, "personagem": personagem,
-        "dado": dado, "quantidade": quantidade, "resultados": resultados,
-        "modificador": modificador, "total": total, "motivo": motivo,
-        "critico": critico, "falha_critica": falha, "hora": datetime.now().strftime("%H:%M:%S"),
+        "id": str(uuid.uuid4())[:8],
+        "ficha_id": ficha_id,
+        "personagem": personagem,
+        "dado": dado,
+        "quantidade": quantidade,
+        "resultados": resultados,
+        "modificador": modificador,
+        "total": total,
+        "motivo": motivo,
+        "critico": critico,
+        "falha_critica": falha,
+        "hora": datetime.now().strftime("%H:%M:%S"),
     }
     _store["log_dados"].append(entrada)
     if len(_store["log_dados"]) > 100:
@@ -218,13 +245,19 @@ def limpar_log():
     return {"ok": True}
 
 
+# COMBATE
 def estado_combate():
     return copy.deepcopy(_store["sessao_combate"])
 
 
 def iniciar_combate(participantes):
     ordenados = sorted(participantes, key=lambda x: x["iniciativa"], reverse=True)
-    _store["sessao_combate"] = {"ativa": True, "rodada": 1, "turno_atual": 0, "iniciativa": ordenados}
+    _store["sessao_combate"] = {
+        "ativa": True,
+        "rodada": 1,
+        "turno_atual": 0,
+        "iniciativa": ordenados,
+    }
     return copy.deepcopy(_store["sessao_combate"])
 
 
@@ -253,14 +286,18 @@ def personagem_ativo_turno():
     return {"ativo": part, "rodada": c["rodada"], "turno": idx}
 
 
+# NOTAS
 def listar_notas():
     return _store["notas"]
 
 
 def criar_nota(titulo, conteudo, categoria="geral"):
     nova = {
-        "id": str(uuid.uuid4())[:8], "titulo": titulo, "conteudo": conteudo,
-        "categoria": categoria, "criado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "id": str(uuid.uuid4())[:8],
+        "titulo": titulo,
+        "conteudo": conteudo,
+        "categoria": categoria,
+        "criado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
     }
     _store["notas"].append(nova)
     return nova
@@ -271,6 +308,7 @@ def deletar_nota(nota_id):
     return {"ok": True}
 
 
+# DASHBOARD
 def dashboard():
     fichas = list(_store["fichas"].values())
     logs = _store["log_dados"]
@@ -278,7 +316,11 @@ def dashboard():
     falhas = sum(1 for l in logs if l.get("falha_critica"))
     media = round(sum(l["total"] for l in logs) / len(logs), 1) if logs else 0
     return {
-        "total_fichas": len(fichas), "total_rolagens": len(logs),
-        "criticos": criticos, "falhas_criticas": falhas, "media_rolagens": media,
-        "fichas": copy.deepcopy(fichas), "ultimas_rolagens": list(reversed(logs[-5:])),
+        "total_fichas": len(fichas),
+        "total_rolagens": len(logs),
+        "criticos": criticos,
+        "falhas_criticas": falhas,
+        "media_rolagens": media,
+        "fichas": copy.deepcopy(fichas),
+        "ultimas_rolagens": list(reversed(logs[-5:])),
     }

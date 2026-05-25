@@ -1,8 +1,8 @@
 """
-Cliente da API Bereshit.
+Cliente da API RPG System.
 
-Modo mock (sem backend): ENABLE_MOCK em gui/mock_data.py ou RPG_USE_MOCK=1
-Modo API real: ENABLE_MOCK=False e uvicorn main:app --reload
+Modo mock (sem backend): USE_MOCK em gui/mock_data.py ou RPG_USE_MOCK=1
+Modo API real: USE_MOCK=False e uvicorn main:app --reload
 """
 
 import os
@@ -195,6 +195,7 @@ else:
             return _post(f"/auth/vincular-ficha?usuario_id={usuario_id}&ficha_id={ficha_id}")
 
 
+# reexporta funções para `from gui import client` / `client.login(...)`
 login = _impl.login
 listar_fichas = _impl.listar_fichas
 buscar_ficha = _impl.buscar_ficha

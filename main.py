@@ -5,8 +5,11 @@ import random
 import uuid
 from datetime import datetime
 
-app = FastAPI(title="Bereshit RPG API", version="1.0.0")
+app = FastAPI(title="RPG System API", version="1.0.0")
 
+# ─────────────────────────────────────────
+# BANCO DE DADOS EM MEMÓRIA (simulado)
+# ─────────────────────────────────────────
 db = {
     "usuarios": {
         "mestre":   {"id": "mestre",   "nome": "Mestre",   "senha": "1234", "role": "mestre",  "ficha_id": None},
@@ -18,7 +21,12 @@ db = {
     "inventarios": {},
     "magias_conhecidas": {},
     "log_dados": [],
-    "sessao_combate": {"ativa": False, "rodada": 0, "turno_atual": 0, "iniciativa": []},
+    "sessao_combate": {
+        "ativa": False,
+        "rodada": 0,
+        "turno_atual": 0,
+        "iniciativa": []
+    },
     "notas": [],
     "itens_catalogo": [
         {"id": "1", "nome": "Espada Longa", "tipo": "arma", "dano": "1d8", "preco": 15, "peso": 3, "descricao": "Arma versátil de uma ou duas mãos"},
@@ -49,7 +57,9 @@ db = {
     ]
 }
 
-
+# ─────────────────────────────────────────
+# MODELOS
+# ─────────────────────────────────────────
 class LoginInput(BaseModel):
     usuario: str
     senha: str
@@ -91,7 +101,9 @@ class HPUpdateInput(BaseModel):
 class CondicaoInput(BaseModel):
     condicao: str
 
-
+# ─────────────────────────────────────────
+# ROTAS: AUTH
+# ─────────────────────────────────────────
 @app.post("/auth/login")
 def login(dados: LoginInput):
     usuario = db["usuarios"].get(dados.usuario)
@@ -103,6 +115,11 @@ def login(dados: LoginInput):
 def listar_usuarios():
     return list(db["usuarios"].values())
 
+
+
+# ─────────────────────────────────────────
+# ROTAS: PERSONAGEM ATIVO / TURNO
+# ─────────────────────────────────────────
 @app.get("/combate/ativo")
 def personagem_ativo():
     combate = db["sessao_combate"]
@@ -120,6 +137,9 @@ def vincular_ficha(usuario_id: str, ficha_id: str):
     usuario["ficha_id"] = ficha_id
     return usuario
 
+# ─────────────────────────────────────────
+# ROTAS: FICHAS
+# ─────────────────────────────────────────
 @app.get("/fichas")
 def listar_fichas():
     return list(db["fichas"].values())
@@ -134,32 +154,54 @@ def buscar_ficha(ficha_id: str):
 @app.post("/fichas", status_code=201)
 def criar_ficha(dados: FichaInput):
     ficha_id = str(uuid.uuid4())[:8]
+
+    # calcula modificadores
     atributos = dados.atributos
     mods = {k: (v - 10) // 2 for k, v in atributos.items()}
+
+    # calcula HP base por classe
     hp_base = {
         "Guerreiro": 10, "Paladino": 10, "Ranger": 10,
         "Mago": 6, "Feiticeiro": 6,
         "Clérigo": 8, "Druida": 8, "Ladino": 8, "Bardo": 8,
         "Bárbaro": 12, "Monge": 8, "Bruxo": 8
     }.get(dados.classe, 8)
+
     hp_max = hp_base + mods.get("constituicao", 0)
+
+    # slots de magia por classe
     tem_magia = dados.classe in ["Mago", "Clérigo", "Druida", "Bardo", "Feiticeiro", "Bruxo", "Paladino", "Ranger"]
+
     ficha = {
-        "id": ficha_id, "nome": dados.nome, "raca": dados.raca, "classe": dados.classe,
-        "background": dados.background, "alinhamento": dados.alinhamento, "historia": dados.historia,
-        "nivel": 1, "xp": 0, "xp_proximo": 300, "atributos": atributos, "modificadores": mods,
-        "hp_max": max(1, hp_max), "hp_atual": max(1, hp_max),
-        "ca": 10 + mods.get("destreza", 0), "bonus_proficiencia": 2,
-        "iniciativa": mods.get("destreza", 0), "movimento": 9,
+        "id": ficha_id,
+        "nome": dados.nome,
+        "raca": dados.raca,
+        "classe": dados.classe,
+        "background": dados.background,
+        "alinhamento": dados.alinhamento,
+        "historia": dados.historia,
+        "nivel": 1,
+        "xp": 0,
+        "xp_proximo": 300,
+        "atributos": atributos,
+        "modificadores": mods,
+        "hp_max": max(1, hp_max),
+        "hp_atual": max(1, hp_max),
+        "ca": 10 + mods.get("destreza", 0),
+        "bonus_proficiencia": 2,
+        "iniciativa": mods.get("destreza", 0),
+        "movimento": 9,
         "tem_magia": tem_magia,
         "slots_magia": {1: 2, 2: 0, 3: 0, 4: 0, 5: 0} if tem_magia else {},
         "slots_usados": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0} if tem_magia else {},
-        "condicoes": [], "criado_em": datetime.now().isoformat(),
-        "status": {"vida": {"atual": max(1, hp_max), "maximo": max(1, hp_max)}},
+        "condicoes": [],
+        "criado_em": datetime.now().isoformat()
     }
+
     db["fichas"][ficha_id] = ficha
     db["inventarios"][ficha_id] = []
     db["magias_conhecidas"][ficha_id] = []
+
     return ficha
 
 @app.patch("/fichas/{ficha_id}")
@@ -201,19 +243,25 @@ def descanso(ficha_id: str, tipo: str):
     ficha = db["fichas"].get(ficha_id)
     if not ficha:
         raise HTTPException(status_code=404, detail="Ficha não encontrada")
+
     if tipo == "curto":
         dado = random.randint(1, 8)
         mod = ficha["modificadores"].get("constituicao", 0)
         recuperado = max(1, dado + mod)
         ficha["hp_atual"] = min(ficha["hp_max"], ficha["hp_atual"] + recuperado)
         return {"tipo": "curto", "hp_recuperado": recuperado, "hp_atual": ficha["hp_atual"]}
+
     elif tipo == "longo":
         ficha["hp_atual"] = ficha["hp_max"]
         ficha["slots_usados"] = {k: 0 for k in ficha["slots_usados"]}
         ficha["condicoes"] = []
         return {"tipo": "longo", "hp_atual": ficha["hp_atual"], "msg": "HP e recursos totalmente restaurados"}
+
     raise HTTPException(status_code=400, detail="Tipo de descanso inválido")
 
+# ─────────────────────────────────────────
+# ROTAS: INVENTÁRIO
+# ─────────────────────────────────────────
 @app.get("/fichas/{ficha_id}/inventario")
 def listar_inventario(ficha_id: str):
     return db["inventarios"].get(ficha_id, [])
@@ -228,9 +276,13 @@ def adicionar_item(ficha_id: str, item: ItemInventarioInput):
 
 @app.delete("/fichas/{ficha_id}/inventario/{item_id}")
 def remover_item(ficha_id: str, item_id: str):
-    db["inventarios"][ficha_id] = [i for i in db["inventarios"].get(ficha_id, []) if i["id"] != item_id]
+    inventario = db["inventarios"].get(ficha_id, [])
+    db["inventarios"][ficha_id] = [i for i in inventario if i["id"] != item_id]
     return {"ok": True}
 
+# ─────────────────────────────────────────
+# ROTAS: MAGIAS
+# ─────────────────────────────────────────
 @app.get("/fichas/{ficha_id}/magias")
 def listar_magias_ficha(ficha_id: str):
     return db["magias_conhecidas"].get(ficha_id, [])
@@ -248,7 +300,8 @@ def aprender_magia(ficha_id: str, magia_id: str):
 
 @app.delete("/fichas/{ficha_id}/magias/{magia_id}")
 def esquecer_magia(ficha_id: str, magia_id: str):
-    db["magias_conhecidas"][ficha_id] = [m for m in db["magias_conhecidas"].get(ficha_id, []) if m["id"] != magia_id]
+    conhecidas = db["magias_conhecidas"].get(ficha_id, [])
+    db["magias_conhecidas"][ficha_id] = [m for m in conhecidas if m["id"] != magia_id]
     return {"ok": True}
 
 @app.post("/fichas/{ficha_id}/slots/{nivel}/usar")
@@ -263,6 +316,9 @@ def usar_slot(ficha_id: str, nivel: int):
     ficha["slots_usados"][nivel] = usados + 1
     return ficha
 
+# ─────────────────────────────────────────
+# ROTAS: CATÁLOGOS
+# ─────────────────────────────────────────
 @app.get("/catalogo/itens")
 def catalogo_itens():
     return db["itens_catalogo"]
@@ -275,22 +331,37 @@ def catalogo_magias():
 def catalogo_monstros():
     return db["monstros_catalogo"]
 
+# ─────────────────────────────────────────
+# ROTAS: DADOS
+# ─────────────────────────────────────────
 @app.post("/dados/rolar")
 def rolar_dados(dados: RolagemInput):
     lados = int(dados.dado[1:])
     resultados = [random.randint(1, lados) for _ in range(dados.quantidade)]
     total = sum(resultados) + dados.modificador
+
     critico = dados.dado == "d20" and resultados[0] == 20
     falha   = dados.dado == "d20" and resultados[0] == 1
+
     entrada = {
-        "id": str(uuid.uuid4())[:8], "ficha_id": dados.ficha_id, "personagem": dados.personagem,
-        "dado": dados.dado, "quantidade": dados.quantidade, "resultados": resultados,
-        "modificador": dados.modificador, "total": total, "motivo": dados.motivo,
-        "critico": critico, "falha_critica": falha, "hora": datetime.now().strftime("%H:%M:%S"),
+        "id": str(uuid.uuid4())[:8],
+        "ficha_id": dados.ficha_id,
+        "personagem": dados.personagem,
+        "dado": dados.dado,
+        "quantidade": dados.quantidade,
+        "resultados": resultados,
+        "modificador": dados.modificador,
+        "total": total,
+        "motivo": dados.motivo,
+        "critico": critico,
+        "falha_critica": falha,
+        "hora": datetime.now().strftime("%H:%M:%S")
     }
+
     db["log_dados"].append(entrada)
     if len(db["log_dados"]) > 100:
         db["log_dados"] = db["log_dados"][-100:]
+
     return entrada
 
 @app.get("/dados/log")
@@ -302,6 +373,9 @@ def limpar_log():
     db["log_dados"] = []
     return {"ok": True}
 
+# ─────────────────────────────────────────
+# ROTAS: COMBATE
+# ─────────────────────────────────────────
 @app.get("/combate")
 def estado_combate():
     return db["sessao_combate"]
@@ -309,7 +383,12 @@ def estado_combate():
 @app.post("/combate/iniciar")
 def iniciar_combate(dados: IniciativaInput):
     ordenados = sorted(dados.participantes, key=lambda x: x["iniciativa"], reverse=True)
-    db["sessao_combate"] = {"ativa": True, "rodada": 1, "turno_atual": 0, "iniciativa": ordenados}
+    db["sessao_combate"] = {
+        "ativa": True,
+        "rodada": 1,
+        "turno_atual": 0,
+        "iniciativa": ordenados
+    }
     return db["sessao_combate"]
 
 @app.post("/combate/proximo")
@@ -328,6 +407,9 @@ def encerrar_combate():
     db["sessao_combate"] = {"ativa": False, "rodada": 0, "turno_atual": 0, "iniciativa": []}
     return {"ok": True}
 
+# ─────────────────────────────────────────
+# ROTAS: NOTAS
+# ─────────────────────────────────────────
 @app.get("/notas")
 def listar_notas():
     return db["notas"]
@@ -335,8 +417,11 @@ def listar_notas():
 @app.post("/notas", status_code=201)
 def criar_nota(nota: NotaInput):
     nova = {
-        "id": str(uuid.uuid4())[:8], "titulo": nota.titulo, "conteudo": nota.conteudo,
-        "categoria": nota.categoria, "criado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "id": str(uuid.uuid4())[:8],
+        "titulo": nota.titulo,
+        "conteudo": nota.conteudo,
+        "categoria": nota.categoria,
+        "criado_em": datetime.now().strftime("%d/%m/%Y %H:%M")
     }
     db["notas"].append(nova)
     return nova
@@ -346,15 +431,24 @@ def deletar_nota(nota_id: str):
     db["notas"] = [n for n in db["notas"] if n["id"] != nota_id]
     return {"ok": True}
 
+# ─────────────────────────────────────────
+# ROTAS: DASHBOARD
+# ─────────────────────────────────────────
 @app.get("/dashboard")
 def dashboard():
     fichas = list(db["fichas"].values())
     logs   = db["log_dados"]
+
     criticos  = sum(1 for l in logs if l.get("critico"))
     falhas    = sum(1 for l in logs if l.get("falha_critica"))
     media     = round(sum(l["total"] for l in logs) / len(logs), 1) if logs else 0
+
     return {
-        "total_fichas": len(fichas), "total_rolagens": len(logs),
-        "criticos": criticos, "falhas_criticas": falhas, "media_rolagens": media,
-        "fichas": fichas, "ultimas_rolagens": list(reversed(logs[-5:])),
+        "total_fichas": len(fichas),
+        "total_rolagens": len(logs),
+        "criticos": criticos,
+        "falhas_criticas": falhas,
+        "media_rolagens": media,
+        "fichas": fichas,
+        "ultimas_rolagens": list(reversed(logs[-5:]))
     }

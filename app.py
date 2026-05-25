@@ -1,12 +1,3 @@
-import os
-
-# Força paleta quente antes de qualquer import do Streamlit
-os.environ.setdefault("STREAMLIT_THEME_BASE", "dark")
-os.environ.setdefault("STREAMLIT_THEME_BACKGROUND_COLOR", "#0c0b09")
-os.environ.setdefault("STREAMLIT_THEME_SECONDARY_BACKGROUND_COLOR", "#131110")
-os.environ.setdefault("STREAMLIT_THEME_TEXT_COLOR", "#c8b89a")
-os.environ.setdefault("STREAMLIT_THEME_PRIMARY_COLOR", "#5a4a30")
-
 import streamlit as st
 
 from gui import client
@@ -25,6 +16,7 @@ st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 if client.MOCK_ATIVO:
     st.sidebar.info("🧪 Modo **mock** — dados fictícios (sem API).")
 
+# estado inicial
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "tela" not in st.session_state:
@@ -34,6 +26,7 @@ def ir_para(tela):
     st.session_state.tela = tela
     st.rerun()
 
+# login
 if not st.session_state.logado:
     login.mostrar()
     st.stop()
@@ -45,6 +38,7 @@ if not isinstance(usuario, dict):
 
 eh_mestre = usuario.get("role") == "mestre"
 
+# ── SIDEBAR ──────────────────────────────
 with st.sidebar:
     st.markdown(f"""
     <div style='text-align:center;padding:8px 0 14px;border-bottom:1px solid #1a1a2a;margin-bottom:10px;'>
@@ -84,6 +78,7 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
+# ── ROTEADOR ─────────────────────────────
 tela = st.session_state.tela
 
 if tela == "dashboard":

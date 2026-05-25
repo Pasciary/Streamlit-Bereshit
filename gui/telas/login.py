@@ -2,7 +2,6 @@ import streamlit as st
 
 from gui import client
 
-
 def mostrar():
     st.markdown("""
     <div style='text-align:center;padding:3rem 0 1.5rem;'>

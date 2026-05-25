@@ -1,11 +1,8 @@
-import random
-import time
-
 import streamlit as st
+import random, time
 
 from gui import client
 from gui.components.status_bar import show_status_bar
-
 
 def mostrar():
     usuario   = st.session_state.get("usuario", {})
@@ -22,6 +19,7 @@ def mostrar():
     ativo   = client.personagem_ativo_turno()
     fichas  = client.listar_fichas()
 
+    # ── PERSONAGEM ATIVO NO TURNO ──
     _render_personagem_ativo(ativo, fichas)
 
     st.divider()
@@ -45,12 +43,14 @@ def mostrar():
         st.divider()
         _render_log()
 
+    # polling — 3s em combate, 8s fora
     intervalo = 3 if combate.get("ativa") else 8
     time.sleep(intervalo)
     st.rerun()
 
 
 def _render_personagem_ativo(ativo, fichas):
+    """Bloco central — quem está no turno agora."""
     st.markdown("<div class='hk-section-title'>Personagem no Turno Atual</div>", unsafe_allow_html=True)
 
     part = ativo.get("ativo") if ativo else None
@@ -63,9 +63,10 @@ def _render_personagem_ativo(ativo, fichas):
         """, unsafe_allow_html=True)
         return
 
+    # acha a ficha do personagem ativo
     ficha_ativa = next((f for f in fichas if f["nome"] == part.get("nome")), None)
-    rodada = ativo.get("rodada", 1)
 
+    rodada = ativo.get("rodada", 1)
     st.markdown(f"""
     <div class='hk-card' style='border-color:#5a4a30;background:#0d0f0a;'>
         <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
@@ -79,6 +80,7 @@ def _render_personagem_ativo(ativo, fichas):
     </div>
     """, unsafe_allow_html=True)
 
+    # barras de status do personagem ativo
     if ficha_ativa:
         status = ficha_ativa.get("status", {})
         vida_a = status.get("vida", {}).get("atual", ficha_ativa.get("hp_atual", 0))
@@ -176,7 +178,7 @@ def _render_rolagem(usuario, fichas):
         client.rolar_dados(
             dado=dado, quantidade=int(qtd), modificador=int(mod),
             ficha_id=personagem_ativo["id"] if personagem_ativo else None,
-            personagem=nome_personagem, motivo=motivo,
+            personagem=nome_personagem, motivo=motivo
         )
 
         if critico:
@@ -188,7 +190,8 @@ def _render_rolagem(usuario, fichas):
 
 
 def _render_status_mesa(fichas, eh_mestre):
-    usuario = st.session_state.get("usuario", {})
+    """Painel lateral: mestre vê todos, jogador vê só o próprio."""
+    usuario   = st.session_state.get("usuario", {})
     titulo = "Status dos Personagens" if eh_mestre else "Seu Personagem"
     st.markdown(f"<div class='hk-section-title'>{titulo}</div>", unsafe_allow_html=True)
 
@@ -196,7 +199,7 @@ def _render_status_mesa(fichas, eh_mestre):
         personagem_ativo = st.session_state.get("personagem_ativo")
         fichas = [f for f in fichas if personagem_ativo and f["id"] == personagem_ativo["id"]]
 
-    for f in fichas[:4]:
+    for f in fichas[:4]:  # máximo 4 para não poluir
         status = f.get("status", {})
         vida_a = status.get("vida", {}).get("atual", f.get("hp_atual", 0))
         vida_m = status.get("vida", {}).get("maximo", f.get("hp_max", 1))

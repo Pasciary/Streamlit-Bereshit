@@ -9,9 +9,8 @@ BACKGROUNDS  = ["Acólito","Artesão","Criminoso","Eremita","Entreter","Herói d
 ALINHAMENTOS = [
     "Leal e Bom","Neutro e Bom","Caótico e Bom",
     "Leal e Neutro","Neutro Verdadeiro","Caótico e Neutro",
-    "Leal e Mau","Neutro e Mau","Caótico e Mau",
+    "Leal e Mau","Neutro e Mau","Caótico e Mau"
 ]
-
 
 def mostrar():
     usuario   = st.session_state.get("usuario", {})
@@ -41,6 +40,7 @@ def _listar_fichas(eh_mestre, usuario):
         st.error(fichas["erro"])
         return
 
+    # filtra por role
     if not eh_mestre:
         ficha_id_proprio = usuario.get("ficha_id")
         fichas = [f for f in fichas if f["id"] == ficha_id_proprio] if ficha_id_proprio else fichas[:1]
@@ -137,8 +137,8 @@ def _criar_ficha():
             "atributos": {
                 "forca": forca, "destreza": destreza,
                 "constituicao": constituicao, "inteligencia": inteligencia,
-                "sabedoria": sabedoria, "carisma": carisma,
-            },
+                "sabedoria": sabedoria, "carisma": carisma
+            }
         })
         if "erro" in res:
             st.error(res["erro"])
