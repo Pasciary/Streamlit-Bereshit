@@ -245,7 +245,7 @@ def show_bloco_status(ficha: dict, colunas: int = 2) -> None:
         + "".join(cells)
         + "</div>"
     )
-    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{grid}", height=rows * 115 + 60)
+    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{grid}", height=rows * 85 + 50)
 
 
 # ─────────────────────────────────────────
