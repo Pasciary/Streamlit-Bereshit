@@ -41,12 +41,11 @@ def mostrar():
                 """, unsafe_allow_html=True)
 
                 status = f.get("status", {})
-                vida_a = status.get("vida", {}).get("atual", f.get("hp_atual", 0))
-                vida_m = status.get("vida", {}).get("maximo", f.get("hp_max", 1))
-                show_status_bar("vida", vida_a, vida_m)
-
-                if status.get("sanidade"):
-                    show_status_bar("sanidade", status["sanidade"]["atual"], status["sanidade"]["maximo"])
+                if "vida" not in status:
+                    status["vida"] = {"atual": f.get("hp_atual", 0), "maximo": f.get("hp_max", 1)}
+                for key in ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]:
+                    if key in status:
+                        show_status_bar(key, status[key]["atual"], status[key]["maximo"])
 
                 c_a, c_b = st.columns(2)
                 with c_a:
