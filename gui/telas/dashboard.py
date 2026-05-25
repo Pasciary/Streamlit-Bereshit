@@ -12,20 +12,7 @@ def mostrar():
         st.error(dados["erro"])
         return
 
-    c1, c2, c3 = st.columns([5, 1, 1])
-    with c1:
-        st.title("📊 Dashboard")
-    with c2:
-        st.markdown(f"""
-        <div style='padding-top:18px;text-align:center;font-size:11px;
-                    color:#5a4a40;letter-spacing:.06em;'>
-            📜 {dados["total_fichas"]} fichas
-        </div>
-        """, unsafe_allow_html=True)
-    with c3:
-        if st.button("🔄 Atualizar", use_container_width=True):
-            st.rerun()
-
+    st.title("📊 Dashboard")
     st.divider()
 
     col1, col2 = st.columns(2)
