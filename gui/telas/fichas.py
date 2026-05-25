@@ -65,9 +65,12 @@ def _listar_fichas(eh_mestre, usuario):
             """, unsafe_allow_html=True)
 
             status = f.get("status", {})
-            vida_a = status.get("vida", {}).get("atual", f.get("hp_atual", 0))
-            vida_m = status.get("vida", {}).get("maximo", f.get("hp_max", 1))
-            show_status_bar("vida", vida_a, vida_m)
+            # garante que vida sempre aparece (fallback hp_atual/hp_max)
+            if "vida" not in status:
+                status["vida"] = {"atual": f.get("hp_atual", 0), "maximo": f.get("hp_max", 1)}
+            for key in ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]:
+                if key in status:
+                    show_status_bar(key, status[key]["atual"], status[key]["maximo"])
 
             if f.get("condicoes"):
                 conds = " ".join([f"<span class='hk-badge hk-badge-warn'>{c}</span>" for c in f["condicoes"]])
