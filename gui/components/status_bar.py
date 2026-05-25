@@ -222,7 +222,7 @@ def show_status_bar(tipo: str, atual: int, maximo: int, variacao: int = None, he
     _html_doc(render_status_bar(tipo, atual, maximo, variacao), height=height)
 
 
-def show_bloco_status(ficha: dict, colunas: int = 2, height: int = 420) -> None:
+def show_bloco_status(ficha: dict, colunas: int = 2) -> None:
     nome = ficha.get("nome", "Personagem")
     status = ficha.get("status", {})
     ordem = ["vida", "sanidade", "sangue", "vigor", "mana", "ki", "arcana"]
@@ -245,7 +245,7 @@ def show_bloco_status(ficha: dict, colunas: int = 2, height: int = 420) -> None:
         + "".join(cells)
         + "</div>"
     )
-    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{grid}", height=max(height, rows * 115 + 60))
+    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{grid}", height=rows * 115 + 60)
 
 
 # ─────────────────────────────────────────
