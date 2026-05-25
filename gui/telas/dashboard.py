@@ -12,7 +12,12 @@ def mostrar():
         st.error(dados["erro"])
         return
 
-    st.title("📊 Dashboard")
+    c1, c2 = st.columns([5, 1])
+    with c1:
+        st.title("📊 Dashboard")
+    with c2:
+        if st.button("🔄", use_container_width=True, help="Atualizar"):
+            st.rerun()
     st.divider()
 
     col1, col2 = st.columns(2)
