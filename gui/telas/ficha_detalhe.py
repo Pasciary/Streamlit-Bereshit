@@ -7,7 +7,6 @@ CONDICOES = ["Amedrontado","Agarrado","Atordoado","Caído","Cego",
              "Enfeitiçado","Envenenado","Exausto","Incapacitado",
              "Invisível","Paralisado","Petrificado","Surdo"]
 
-
 def mostrar():
     usuario   = st.session_state.get("usuario", {})
     eh_mestre = usuario.get("role") == "mestre"
@@ -22,6 +21,7 @@ def mostrar():
         st.error(ficha["erro"])
         return
 
+    # jogador só vê a própria ficha
     if not eh_mestre:
         ficha_id_proprio = usuario.get("ficha_id")
         if ficha_id_proprio and ficha["id"] != ficha_id_proprio:
@@ -30,6 +30,7 @@ def mostrar():
             st.rerun()
             return
 
+    # cabeçalho
     c1, c2, c3 = st.columns([1, 5, 2])
     with c1:
         if st.button("←", use_container_width=True):
@@ -54,7 +55,9 @@ def mostrar():
 
     st.divider()
 
-    aba1, aba2, aba3, aba4, aba5 = st.tabs(["⚔️ Status", "🎒 Inventário", "📖 Magias", "😴 Descanso", "📝 Info"])
+    aba1, aba2, aba3, aba4, aba5 = st.tabs([
+        "⚔️ Status", "🎒 Inventário", "📖 Magias", "😴 Descanso", "📝 Info"
+    ])
     with aba1: _aba_status(ficha, eh_mestre)
     with aba2: _aba_inventario(ficha, eh_mestre)
     with aba3: _aba_magias(ficha, eh_mestre)
@@ -79,6 +82,7 @@ def _aba_status(ficha, eh_mestre):
     with col1:
         st.markdown("<div class='hk-section-title'>Ajustar Vida</div>", unsafe_allow_html=True)
 
+        # só mestre (ou o próprio jogador) pode editar
         novo_hp = st.number_input("HP Atual", 0, vida_m, vida_a, key="hp_input")
         ca1, ca2, ca3 = st.columns(3)
         with ca1:
@@ -105,6 +109,7 @@ def _aba_status(ficha, eh_mestre):
         cb2.metric("Iniciativa", f"+{ficha['iniciativa']}" if ficha['iniciativa'] >= 0 else str(ficha['iniciativa']))
         cb3.metric("Prof.", f"+{ficha['bonus_proficiencia']}")
 
+        # condições — só mestre edita
         if eh_mestre:
             st.divider()
             st.markdown("<div class='hk-section-title'>Condições</div>", unsafe_allow_html=True)
@@ -129,8 +134,8 @@ def _aba_status(ficha, eh_mestre):
     with col2:
         st.markdown("<div class='hk-section-title'>Atributos</div>", unsafe_allow_html=True)
         NOMES = {
-            "forca": "💪 Força", "destreza": "🏃 Destreza", "constituicao": "❤️ Constituição",
-            "inteligencia": "🧠 Inteligência", "sabedoria": "🦉 Sabedoria", "carisma": "✨ Carisma",
+            "forca":"💪 Força","destreza":"🏃 Destreza","constituicao":"❤️ Constituição",
+            "inteligencia":"🧠 Inteligência","sabedoria":"🦉 Sabedoria","carisma":"✨ Carisma"
         }
         attr_cards = []
         for chave, label in NOMES.items():
@@ -155,6 +160,7 @@ def _aba_status(ficha, eh_mestre):
 def _aba_inventario(ficha, eh_mestre):
     st.subheader("🎒 Inventário")
 
+    # catálogo rápido
     with st.expander("🛒 Adicionar do Catálogo"):
         catalogo = client.catalogo_itens()
         for item in catalogo:
@@ -209,7 +215,7 @@ def _aba_magias(ficha, eh_mestre):
     usados = ficha.get("slots_usados", {})
 
     cols = st.columns(5)
-    for i, nivel in enumerate([1, 2, 3, 4, 5]):
+    for i, nivel in enumerate([1,2,3,4,5]):
         total = slots.get(nivel, 0)
         gasto = usados.get(nivel, 0)
         disp  = total - gasto
@@ -222,8 +228,8 @@ def _aba_magias(ficha, eh_mestre):
 
     st.divider()
     st.subheader("📖 Magias Conhecidas")
-    magias_ficha   = client.listar_magias_ficha(ficha["id"])
-    catalogo       = client.catalogo_magias()
+    magias_ficha = client.listar_magias_ficha(ficha["id"])
+    catalogo     = client.catalogo_magias()
     ids_conhecidos = [m["id"] for m in magias_ficha]
 
     with st.expander("✨ Aprender nova magia"):

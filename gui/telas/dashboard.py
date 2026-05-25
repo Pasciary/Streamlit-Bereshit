@@ -3,7 +3,6 @@ import streamlit as st
 from gui import client
 from gui.components.status_bar import show_status_bar
 
-
 def mostrar():
     usuario   = st.session_state.get("usuario", {})
     eh_mestre = usuario.get("role") == "mestre"
@@ -20,12 +19,13 @@ def mostrar():
         st.error(dados["erro"])
         return
 
+    # métricas
     cols = st.columns(5)
-    cols[0].metric("📜 Fichas",    dados["total_fichas"])
-    cols[1].metric("🎲 Rolagens",  dados["total_rolagens"])
-    cols[2].metric("🌟 Críticos",  dados["criticos"])
-    cols[3].metric("💀 Falhas",    dados["falhas_criticas"])
-    cols[4].metric("📈 Média",     dados["media_rolagens"])
+    cols[0].metric("📜 Fichas",      dados["total_fichas"])
+    cols[1].metric("🎲 Rolagens",    dados["total_rolagens"])
+    cols[2].metric("🌟 Críticos",    dados["criticos"])
+    cols[3].metric("💀 Falhas",      dados["falhas_criticas"])
+    cols[4].metric("📈 Média",       dados["media_rolagens"])
 
     st.divider()
 
@@ -35,6 +35,7 @@ def mostrar():
         st.markdown("""<div class='hk-section-title'>Personagens</div>""", unsafe_allow_html=True)
         fichas = dados.get("fichas", [])
 
+        # mestre vê todos, jogador só a própria
         if not eh_mestre:
             ficha_id_proprio = usuario.get("ficha_id")
             fichas = [f for f in fichas if f["id"] == ficha_id_proprio] if ficha_id_proprio else []

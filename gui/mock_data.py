@@ -1,17 +1,38 @@
 """
 Dados fictícios para validar o front sem a API (uvicorn) rodando.
 
-Ative o modo mock definindo a variável de ambiente: RPG_USE_MOCK=1
+Ative o modo mock em gui/client.py (USE_MOCK = True)
+ou defina a variável de ambiente: RPG_USE_MOCK=1
 """
 
 ENABLE_MOCK = True
 
+# ── usuários ─────────────────────────────────────────────────────────────
 USUARIOS = {
-    "mestre": {"id": "mestre", "nome": "Mestre", "senha": "1234", "role": "mestre", "ficha_id": None},
-    "jogador1": {"id": "jogador1", "nome": "Jogador 1", "senha": "1234", "role": "jogador", "ficha_id": "a1b2c3d4"},
-    "jogador2": {"id": "jogador2", "nome": "Jogador 2", "senha": "1234", "role": "jogador", "ficha_id": "e5f6g7h8"},
+    "mestre": {
+        "id": "mestre",
+        "nome": "Mestre",
+        "senha": "1234",
+        "role": "mestre",
+        "ficha_id": None,
+    },
+    "jogador1": {
+        "id": "jogador1",
+        "nome": "Jogador 1",
+        "senha": "1234",
+        "role": "jogador",
+        "ficha_id": "a1b2c3d4",
+    },
+    "jogador2": {
+        "id": "jogador2",
+        "nome": "Jogador 2",
+        "senha": "1234",
+        "role": "jogador",
+        "ficha_id": "e5f6g7h8",
+    },
 }
 
+# ── catálogos ────────────────────────────────────────────────────────────
 ITENS_CATALOGO = [
     {"id": "1", "nome": "Espada Longa", "tipo": "arma", "dano": "1d8", "preco": 15, "peso": 3, "descricao": "Arma versátil de uma ou duas mãos"},
     {"id": "2", "nome": "Arco Curto", "tipo": "arma", "dano": "1d6", "preco": 25, "peso": 2, "descricao": "Arco para ataques à distância"},
@@ -42,6 +63,7 @@ MONSTROS_CATALOGO = [
     {"id": "6", "nome": "Dragão Jovem", "hp": 178, "ca": 18, "ataque": "+10", "dano": "2d10+6", "cr": "10", "xp": 5900},
 ]
 
+# ── fichas ─────────────────────────────────────────────────────────────
 FICHA_GUERREIRO = {
     "id": "a1b2c3d4",
     "nome": "Thorn Hollow",
@@ -50,11 +72,23 @@ FICHA_GUERREIRO = {
     "background": "Soldado",
     "alinhamento": "Leal e Bom",
     "historia": "Veterano das guerras do reino. Busca redenção após a queda de Hallownest.",
-    "nivel": 3, "xp": 900, "xp_proximo": 2700,
-    "atributos": {"forca": 16, "destreza": 12, "constituicao": 15, "inteligencia": 10, "sabedoria": 11, "carisma": 9},
+    "nivel": 3,
+    "xp": 900,
+    "xp_proximo": 2700,
+    "atributos": {
+        "forca": 16, "destreza": 12, "constituicao": 15,
+        "inteligencia": 10, "sabedoria": 11, "carisma": 9,
+    },
     "modificadores": {"forca": 3, "destreza": 1, "constituicao": 2, "inteligencia": 0, "sabedoria": 0, "carisma": -1},
-    "hp_max": 28, "hp_atual": 19, "ca": 17, "bonus_proficiencia": 2, "iniciativa": 1, "movimento": 9,
-    "tem_magia": False, "slots_magia": {}, "slots_usados": {},
+    "hp_max": 28,
+    "hp_atual": 19,
+    "ca": 17,
+    "bonus_proficiencia": 2,
+    "iniciativa": 1,
+    "movimento": 9,
+    "tem_magia": False,
+    "slots_magia": {},
+    "slots_usados": {},
     "condicoes": ["Envenenado"],
     "criado_em": "2026-05-10T14:22:00",
     "status": {
@@ -73,10 +107,20 @@ FICHA_MAGO = {
     "background": "Sábio",
     "alinhamento": "Neutro e Bom",
     "historia": "Estudiosa do grimório ancestral. Especialista em evocação e abjuração.",
-    "nivel": 3, "xp": 850, "xp_proximo": 2700,
-    "atributos": {"forca": 8, "destreza": 14, "constituicao": 12, "inteligencia": 17, "sabedoria": 13, "carisma": 11},
+    "nivel": 3,
+    "xp": 850,
+    "xp_proximo": 2700,
+    "atributos": {
+        "forca": 8, "destreza": 14, "constituicao": 12,
+        "inteligencia": 17, "sabedoria": 13, "carisma": 11,
+    },
     "modificadores": {"forca": -1, "destreza": 2, "constituicao": 1, "inteligencia": 3, "sabedoria": 1, "carisma": 0},
-    "hp_max": 18, "hp_atual": 18, "ca": 14, "bonus_proficiencia": 2, "iniciativa": 2, "movimento": 9,
+    "hp_max": 18,
+    "hp_atual": 18,
+    "ca": 14,
+    "bonus_proficiencia": 2,
+    "iniciativa": 2,
+    "movimento": 9,
     "tem_magia": True,
     "slots_magia": {1: 4, 2: 2, 3: 0, 4: 0, 5: 0},
     "slots_usados": {1: 1, 2: 0, 3: 0, 4: 0, 5: 0},
@@ -98,11 +142,23 @@ FICHA_LADINO = {
     "background": "Criminoso",
     "alinhamento": "Caótico e Neutro",
     "historia": "Ladrão de guilda que virou aventureiro por uma dívida com o mestre.",
-    "nivel": 2, "xp": 450, "xp_proximo": 900,
-    "atributos": {"forca": 10, "destreza": 17, "constituicao": 12, "inteligencia": 12, "sabedoria": 10, "carisma": 14},
+    "nivel": 2,
+    "xp": 450,
+    "xp_proximo": 900,
+    "atributos": {
+        "forca": 10, "destreza": 17, "constituicao": 12,
+        "inteligencia": 12, "sabedoria": 10, "carisma": 14,
+    },
     "modificadores": {"forca": 0, "destreza": 3, "constituicao": 1, "inteligencia": 1, "sabedoria": 0, "carisma": 2},
-    "hp_max": 16, "hp_atual": 11, "ca": 15, "bonus_proficiencia": 2, "iniciativa": 3, "movimento": 7,
-    "tem_magia": False, "slots_magia": {}, "slots_usados": {},
+    "hp_max": 16,
+    "hp_atual": 11,
+    "ca": 15,
+    "bonus_proficiencia": 2,
+    "iniciativa": 3,
+    "movimento": 7,
+    "tem_magia": False,
+    "slots_magia": {},
+    "slots_usados": {},
     "condicoes": [],
     "criado_em": "2026-05-15T18:40:00",
     "status": {
@@ -129,17 +185,47 @@ INVENTARIOS = {
 }
 
 MAGIAS_CONHECIDAS = {
-    "e5f6g7h8": [MAGIAS_CATALOGO[0], MAGIAS_CATALOGO[2], MAGIAS_CATALOGO[3], MAGIAS_CATALOGO[5]],
+    "e5f6g7h8": [
+        MAGIAS_CATALOGO[0],
+        MAGIAS_CATALOGO[2],
+        MAGIAS_CATALOGO[3],
+        MAGIAS_CATALOGO[5],
+    ],
     "a1b2c3d4": [],
     "i9j0k1l2": [],
 }
 
 LOG_DADOS = [
-    {"id": "r001", "ficha_id": "a1b2c3d4", "personagem": "Thorn Hollow", "dado": "d20", "quantidade": 1, "resultados": [20], "modificador": 5, "total": 25, "motivo": "Ataque com espada", "critico": True, "falha_critica": False, "hora": "15:10:02"},
-    {"id": "r002", "ficha_id": "e5f6g7h8", "personagem": "Lyra Nocturne", "dado": "d20", "quantidade": 1, "resultados": [1], "modificador": 3, "total": 4, "motivo": "Salvaguarda de Destreza", "critico": False, "falha_critica": True, "hora": "15:11:44"},
-    {"id": "r003", "ficha_id": None, "personagem": "Mestre", "dado": "d6", "quantidade": 2, "resultados": [4, 6], "modificador": 0, "total": 10, "motivo": "Dano do Goblin", "critico": False, "falha_critica": False, "hora": "15:12:30"},
-    {"id": "r004", "ficha_id": "i9j0k1l2", "personagem": "Silas Quickfinger", "dado": "d20", "quantidade": 1, "resultados": [14], "modificador": 7, "total": 21, "motivo": "Furtividade", "critico": False, "falha_critica": False, "hora": "15:14:08"},
-    {"id": "r005", "ficha_id": "a1b2c3d4", "personagem": "Thorn Hollow", "dado": "d8", "quantidade": 1, "resultados": [6], "modificador": 3, "total": 9, "motivo": "Dano da espada", "critico": False, "falha_critica": False, "hora": "15:15:22"},
+    {
+        "id": "r001", "ficha_id": "a1b2c3d4", "personagem": "Thorn Hollow",
+        "dado": "d20", "quantidade": 1, "resultados": [20], "modificador": 5,
+        "total": 25, "motivo": "Ataque com espada", "critico": True, "falha_critica": False,
+        "hora": "15:10:02",
+    },
+    {
+        "id": "r002", "ficha_id": "e5f6g7h8", "personagem": "Lyra Nocturne",
+        "dado": "d20", "quantidade": 1, "resultados": [1], "modificador": 3,
+        "total": 4, "motivo": "Salvaguarda de Destreza", "critico": False, "falha_critica": True,
+        "hora": "15:11:44",
+    },
+    {
+        "id": "r003", "ficha_id": None, "personagem": "Mestre",
+        "dado": "d6", "quantidade": 2, "resultados": [4, 6], "modificador": 0,
+        "total": 10, "motivo": "Dano do Goblin", "critico": False, "falha_critica": False,
+        "hora": "15:12:30",
+    },
+    {
+        "id": "r004", "ficha_id": "i9j0k1l2", "personagem": "Silas Quickfinger",
+        "dado": "d20", "quantidade": 1, "resultados": [14], "modificador": 7,
+        "total": 21, "motivo": "Furtividade", "critico": False, "falha_critica": False,
+        "hora": "15:14:08",
+    },
+    {
+        "id": "r005", "ficha_id": "a1b2c3d4", "personagem": "Thorn Hollow",
+        "dado": "d8", "quantidade": 1, "resultados": [6], "modificador": 3,
+        "total": 9, "motivo": "Dano da espada", "critico": False, "falha_critica": False,
+        "hora": "15:15:22",
+    },
 ]
 
 SESSAO_COMBATE = {
@@ -155,11 +241,17 @@ SESSAO_COMBATE = {
 }
 
 NOTAS = [
-    {"id": "n01", "titulo": "A masmorra de Greenpath", "conteudo": "Os jogadores encontraram um altar antigo. Próxima sessão: boss do guardião.", "categoria": "campanha", "criado_em": "12/05/2026 20:00"},
+    {
+        "id": "n01",
+        "titulo": "A masmorra de Greenpath",
+        "conteudo": "Os jogadores encontraram um altar antigo. Próxima sessão: boss do guardião.",
+        "categoria": "campanha",
+        "criado_em": "12/05/2026 20:00",
+    },
 ]
 
-
 def seed_store():
+    """Retorna uma cópia mutável do estado inicial (espelha o db do main.py)."""
     import copy
     return {
         "usuarios": copy.deepcopy(USUARIOS),

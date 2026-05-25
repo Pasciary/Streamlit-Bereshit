@@ -6,15 +6,23 @@ Use show_status_bar() no Streamlit — SVG via st.markdown quebra o front (erro 
 
 import streamlit.components.v1 as components
 
+# ─────────────────────────────────────────
+# CONFIGURAÇÃO DOS STATUS
+# ─────────────────────────────────────────
+
 STATUS_CONFIG = {
-    "vida":     {"label": "VIDA",     "descricao": "resistência física",              "cor_inicio": "#e05050", "cor_fim": "#a02020", "simbolo": "vida"},
-    "sanidade": {"label": "SANIDADE", "descricao": "resistência mental",              "cor_inicio": "#4080d0", "cor_fim": "#1040a0", "simbolo": "sanidade"},
-    "sangue":   {"label": "SANGUE",   "descricao": "reserva vital",                   "cor_inicio": "#c02030", "cor_fim": "#700010", "simbolo": "sangue"},
-    "vigor":    {"label": "VIGOR",    "descricao": "poder físico · golpes especiais", "cor_inicio": "#d08020", "cor_fim": "#805010", "simbolo": "vigor"},
-    "mana":     {"label": "MANA",     "descricao": "magias básicas e intermediárias", "cor_inicio": "#c0a0e0", "cor_fim": "#6030b0", "simbolo": "mana"},
-    "ki":       {"label": "KI",       "descricao": "artes marciais · cultivadores",   "cor_inicio": "#c07820", "cor_fim": "#804800", "simbolo": "ki"},
-    "arcana":   {"label": "ARCANA",   "descricao": "mana refinada · magias avançadas","cor_inicio": "#c0a0e0", "cor_fim": "#6030b0", "simbolo": "arcana"},
+    "vida":     {"label": "VIDA",     "descricao": "resistência física",                 "cor_inicio": "#e05050", "cor_fim": "#a02020", "simbolo": "vida"},
+    "sanidade": {"label": "SANIDADE", "descricao": "resistência mental",                 "cor_inicio": "#4080d0", "cor_fim": "#1040a0", "simbolo": "sanidade"},
+    "sangue":   {"label": "SANGUE",   "descricao": "reserva vital",                      "cor_inicio": "#c02030", "cor_fim": "#700010", "simbolo": "sangue"},
+    "vigor":    {"label": "VIGOR",    "descricao": "poder físico · golpes especiais",    "cor_inicio": "#d08020", "cor_fim": "#805010", "simbolo": "vigor"},
+    "mana":     {"label": "MANA",     "descricao": "magias básicas e intermediárias",    "cor_inicio": "#c0a0e0", "cor_fim": "#6030b0", "simbolo": "mana"},
+    "ki":       {"label": "KI",       "descricao": "artes marciais · cultivadores",      "cor_inicio": "#c07820", "cor_fim": "#804800", "simbolo": "ki"},
+    "arcana":   {"label": "ARCANA",   "descricao": "mana refinada · magias avançadas",   "cor_inicio": "#c0a0e0", "cor_fim": "#6030b0", "simbolo": "arcana"},
 }
+
+# ─────────────────────────────────────────
+# CANTOS ORNAMENTAIS (compartilhado)
+# ─────────────────────────────────────────
 
 _CANTOS = """
     <polygon points="8,8 18,8 18,18 8,18" fill="#2a2010"/>
@@ -37,6 +45,10 @@ _CONECTOR = """
     <rect x="63" y="28" width="4"  height="4"  fill="#2a2010"/>
     <rect x="63" y="28" width="4"  height="4"  fill="none" stroke="#4a3a22" stroke-width="0.7"/>
 """
+
+# ─────────────────────────────────────────
+# SÍMBOLOS SVG
+# ─────────────────────────────────────────
 
 _SIMBOLOS = {
     "vida": f"""{_CANTOS}
@@ -125,6 +137,14 @@ _SIMBOLOS = {
         <line x1="41" y1="19" x2="46" y2="14" stroke="#6a5a38" stroke-width="1.8"/>
         <line x1="19" y1="41" x2="14" y2="46" stroke="#6a5a38" stroke-width="1.8"/>
         <line x1="41" y1="41" x2="46" y2="46" stroke="#6a5a38" stroke-width="1.8"/>
+        <line x1="23" y1="16" x2="22" y2="11" stroke="#5a4a30" stroke-width="1"/>
+        <line x1="37" y1="16" x2="38" y2="11" stroke="#5a4a30" stroke-width="1"/>
+        <line x1="23" y1="44" x2="22" y2="49" stroke="#5a4a30" stroke-width="1"/>
+        <line x1="37" y1="44" x2="38" y2="49" stroke="#5a4a30" stroke-width="1"/>
+        <line x1="16" y1="23" x2="11" y2="22" stroke="#5a4a30" stroke-width="1"/>
+        <line x1="16" y1="37" x2="11" y2="38" stroke="#5a4a30" stroke-width="1"/>
+        <line x1="44" y1="23" x2="49" y2="22" stroke="#5a4a30" stroke-width="1"/>
+        <line x1="44" y1="37" x2="49" y2="38" stroke="#5a4a30" stroke-width="1"/>
         <circle cx="30" cy="30" r="8" fill="#1a1408" stroke="#5a4a30" stroke-width="1.3"/>
         <circle cx="30" cy="30" r="5" fill="#141008" stroke="#4a3a22" stroke-width="0.8"/>
         <ellipse cx="30" cy="30" rx="1.5" ry="4" fill="#2a2010" stroke="#6a5a38" stroke-width="0.7"/>
@@ -133,9 +153,10 @@ _SIMBOLOS = {
 
 
 def _orn(tipo: str, espelhar: bool = False) -> str:
-    mirror = 'style="transform:scaleX(-1)"' if espelhar else ""
+    mirror = 'style="transform:scaleX(-1)"' if espelhar else ''
     return f"""<svg {mirror} width="70" height="60" viewBox="0 0 70 60"
-        xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;display:block;">
+        xmlns="http://www.w3.org/2000/svg"
+        style="flex-shrink:0;display:block;">
         <rect width="60" height="60" fill="#141008"/>
         <rect x="0" y="0" width="60" height="60" fill="none" stroke="#3a3020" stroke-width="1"/>
         {_SIMBOLOS.get(tipo, _SIMBOLOS['mana'])}
@@ -157,6 +178,10 @@ def _deco() -> str:
         <rect x="379" y="3" width="6"  height="4" fill="#2a2010" rx="1"/>
     </svg>"""
 
+
+# ─────────────────────────────────────────
+# CSS GLOBAL
+# ─────────────────────────────────────────
 
 HK_CSS_RULES = """
 .hk-label-row{font-family:'Cinzel',Georgia,serif;font-size:10px;letter-spacing:.18em;color:#6a5a40;margin-bottom:3px;display:flex;align-items:center;gap:6px;}
@@ -181,17 +206,45 @@ HK_CSS = f"<style>{HK_CSS_RULES}</style>"
 
 
 def _html_doc(body: str, height: int) -> None:
-    """Render HTML+SVG in an isolated iframe (avoids React crash in Streamlit)."""
+    """Renderiza HTML+SVG em iframe isolado (evita crash do React no Streamlit)."""
     doc = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap">
-<style>html,body{{margin:0;padding:0;background:transparent;overflow:hidden;}}{HK_CSS_RULES}</style>
-</head><body>{body}</body></html>"""
+<style>
+html,body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
+{HK_CSS_RULES}
+</style></head><body>{body}</body></html>"""
     components.html(doc, height=height, scrolling=False)
 
 
-def render_status_bar(tipo: str, atual: int, maximo: int, variacao: int | None = None) -> str:
-    """Return the HTML string for a single status bar."""
+def show_status_bar(tipo: str, atual: int, maximo: int, variacao: int = None, height: int = 108) -> None:
+    _html_doc(render_status_bar(tipo, atual, maximo, variacao), height=height)
+
+
+def show_bloco_status(ficha: dict, height: int = 420) -> None:
+    nome = ficha.get("nome", "Personagem")
+    status = ficha.get("status", {})
+    ordem = ["vida", "sanidade", "sangue", "vigor", "mana", "ki", "arcana"]
+    barras = ""
+    for tipo in ordem:
+        dados = status.get(tipo)
+        if dados:
+            barras += render_status_bar(
+                tipo=tipo,
+                atual=dados.get("atual", 0),
+                maximo=dados.get("maximo", 1),
+                variacao=dados.get("variacao"),
+            )
+    n = max(1, barras.count("hk-painel"))
+    _html_doc(f"<div class='hk-nome'>{nome.upper()}</div>{barras}", height=max(height, 108 * n + 40))
+
+
+# ─────────────────────────────────────────
+# FUNÇÕES PÚBLICAS
+# ─────────────────────────────────────────
+
+def render_status_bar(tipo: str, atual: int, maximo: int, variacao: int = None) -> str:
+    """Renderiza uma única barra de status."""
     cfg = STATUS_CONFIG.get(tipo, STATUS_CONFIG["vida"])
     pct = max(0.0, min(100.0, (atual / maximo * 100) if maximo > 0 else 0))
 
@@ -217,15 +270,21 @@ def render_status_bar(tipo: str, atual: int, maximo: int, variacao: int | None =
     </div>"""
 
 
-def show_status_bar(tipo: str, atual: int, maximo: int, variacao: int | None = None, height: int = 108) -> None:
-    """Render a single status bar as an iframe component."""
-    _html_doc(render_status_bar(tipo, atual, maximo, variacao), height=height)
+def render_bloco_status(ficha: dict) -> str:
+    """Renderiza todas as barras de status de uma ficha completa."""
+    nome   = ficha.get("nome", "Personagem")
+    status = ficha.get("status", {})
+    ordem  = ["vida", "sanidade", "sangue", "vigor", "mana", "ki", "arcana"]
 
+    barras = ""
+    for tipo in ordem:
+        dados = status.get(tipo)
+        if dados:
+            barras += render_status_bar(
+                tipo=tipo,
+                atual=dados.get("atual", 0),
+                maximo=dados.get("maximo", 1),
+                variacao=dados.get("variacao"),
+            )
 
-def show_vida_sanidade(hp_atual: int, hp_max: int, mp_atual: int, mp_max: int, height: int = 210) -> None:
-    """Render HP (vida) and MP (sanidade) bars together in one iframe."""
-    html = (
-        render_status_bar("vida", hp_atual, hp_max)
-        + render_status_bar("sanidade", mp_atual, mp_max)
-    )
-    _html_doc(html, height=height)
+    return f"{HK_CSS}<div class='hk-nome'>{nome.upper()}</div>{barras}"
