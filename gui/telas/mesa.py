@@ -20,14 +20,14 @@ def mostrar():
     ativo   = client.personagem_ativo_turno()
     fichas  = client.listar_fichas()
 
-    col_status, col_init, col_dado = st.columns([2, 1.5, 1.5])
+    col_esq, col_dir = st.columns([2, 2])
 
-    with col_status:
+    with col_esq:
         _render_personagem_ativo(ativo, fichas)
         st.divider()
         _render_rolagem(usuario, fichas)
 
-    with col_init:
+    with col_dir:
         if combate.get("ativa"):
             _render_combate_ativo(combate, ativo, fichas, eh_mestre)
         else:
@@ -35,8 +35,7 @@ def mostrar():
                 _render_iniciar_combate(fichas)
             else:
                 st.info("Aguardando o mestre iniciar o combate...")
-
-    with col_dado:
+        st.divider()
         _render_log()
 
     if combate.get("ativa"):
