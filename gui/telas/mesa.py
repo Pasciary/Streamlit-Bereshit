@@ -4,6 +4,7 @@ import random, time
 from gui import client
 from gui.components.status_bar import show_status_bar
 
+
 def mostrar():
     usuario   = st.session_state.get("usuario", {})
     eh_mestre = usuario.get("role") == "mestre"
@@ -19,14 +20,13 @@ def mostrar():
     ativo   = client.personagem_ativo_turno()
     fichas  = client.listar_fichas()
 
-    # ── PERSONAGEM ATIVO NO TURNO ──
-    _render_personagem_ativo(ativo, fichas)
+    # ── 3 COLUNAS PRINCIPAIS ─────────────────
+    col_status, col_init, col_dado = st.columns([2, 1.5, 1.5])
 
-    st.divider()
+    with col_status:
+        _render_personagem_ativo(ativo, fichas)
 
-    col1, col2 = st.columns([1.4, 1])
-
-    with col1:
+    with col_init:
         if combate.get("ativa"):
             _render_combate_ativo(combate, ativo, fichas, eh_mestre)
         else:
@@ -35,22 +35,18 @@ def mostrar():
             else:
                 st.info("Aguardando o mestre iniciar o combate...")
 
-        st.divider()
+    with col_dado:
         _render_rolagem(usuario, fichas)
 
-    with col2:
-        _render_status_mesa(fichas, eh_mestre)
-        st.divider()
-        _render_log()
+    st.divider()
+    _render_log()
 
-    # polling — 3s em combate, 8s fora
     intervalo = 3 if combate.get("ativa") else 8
     time.sleep(intervalo)
     st.rerun()
 
 
 def _render_personagem_ativo(ativo, fichas):
-    """Bloco central — quem está no turno agora."""
     st.markdown("<div class='hk-section-title'>Personagem no Turno Atual</div>", unsafe_allow_html=True)
 
     part = ativo.get("ativo") if ativo else None
@@ -58,36 +54,43 @@ def _render_personagem_ativo(ativo, fichas):
     if not part:
         st.markdown("""
         <div class='hk-card' style='text-align:center;'>
-            <div style='font-family:Cinzel,serif;font-size:13px;color:#5a4a30;letter-spacing:.15em;'>— NENHUM COMBATE ATIVO —</div>
+            <div style='font-family:Cinzel,serif;font-size:12px;color:#5a4a30;letter-spacing:.15em;'>— NENHUM COMBATE ATIVO —</div>
         </div>
         """, unsafe_allow_html=True)
         return
 
-    # acha a ficha do personagem ativo
     ficha_ativa = next((f for f in fichas if f["nome"] == part.get("nome")), None)
-
     rodada = ativo.get("rodada", 1)
+    icone  = "👑" if part.get("tipo") == "jogador" else "👹"
+
+    # cabeçalho compacto
     st.markdown(f"""
-    <div class='hk-card' style='border-color:#5a4a30;background:#0d0f0a;'>
-        <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
+    <div class='hk-card' style='border-color:#5a4a30;background:#0d0f0a;padding:8px 12px;'>
+        <div style='display:flex;justify-content:space-between;align-items:center;'>
             <div>
-                <div style='font-size:9px;letter-spacing:.16em;color:#5a4a30;font-family:Cinzel,serif;'>— TURNO ATUAL — RODADA {rodada} —</div>
-                <div style='font-family:Cinzel,serif;font-size:18px;font-weight:700;letter-spacing:.2em;color:#c8b89a;'>{part.get('nome','?').upper()}</div>
-                <div style='font-size:11px;color:#6a5a40;'>init {part.get('iniciativa','?')}</div>
+                <div style='font-size:9px;letter-spacing:.16em;color:#5a4a30;font-family:Cinzel,serif;'>
+                    RODADA {rodada}
+                </div>
+                <div style='font-family:Cinzel,serif;font-size:16px;font-weight:700;
+                            letter-spacing:.2em;color:#c8b89a;margin-top:2px;'>
+                    {part.get('nome','?').upper()}
+                </div>
+                <div style='font-size:10px;color:#6a5a40;'>init {part.get('iniciativa','?')}</div>
             </div>
-            <div style='font-size:36px;'>{'👑' if part.get('tipo') == 'jogador' else '👹'}</div>
+            <div style='font-size:28px;'>{icone}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # barras de status do personagem ativo
+    # todas as barras de status (empilhadas, largura total)
     if ficha_ativa:
         status = ficha_ativa.get("status", {})
-        vida_a = status.get("vida", {}).get("atual", ficha_ativa.get("hp_atual", 0))
-        vida_m = status.get("vida", {}).get("maximo", ficha_ativa.get("hp_max", 1))
-        show_status_bar("vida", vida_a, vida_m)
-        if status.get("vigor"):
-            show_status_bar("vigor", status["vigor"]["atual"], status["vigor"]["maximo"])
+        if "vida" not in status:
+            status["vida"] = {"atual": ficha_ativa.get("hp_atual", 0), "maximo": ficha_ativa.get("hp_max", 1)}
+        for tipo in ["vida", "sangue", "sanidade", "vigor", "mana", "ki", "arcana"]:
+            if tipo in status:
+                s = status[tipo]
+                show_status_bar(tipo, s["atual"], s["maximo"], s.get("variacao"))
 
 
 def _render_combate_ativo(combate, ativo, fichas, eh_mestre):
@@ -105,7 +108,8 @@ def _render_combate_ativo(combate, ativo, fichas, eh_mestre):
         <div style='display:flex;align-items:center;gap:10px;padding:7px 12px;
              background:{cor_bg};border:0.5px solid {cor_brd};border-radius:6px;margin-bottom:4px;'>
             <div style='color:{cor_txt};font-size:10px;'>{icone}</div>
-            <div style='flex:1;font-size:13px;color:{cor_txt};font-weight:{"600" if eh_turno else "400"};'>{part['nome']}</div>
+            <div style='flex:1;font-size:13px;color:{cor_txt};
+                        font-weight:{"600" if eh_turno else "400"};'>{part['nome']}</div>
             <div style='font-size:11px;color:#3a4a6a;'>init {part['iniciativa']}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -156,62 +160,31 @@ def _render_rolagem(usuario, fichas):
 
     personagem_ativo = st.session_state.get("personagem_ativo")
 
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        dado = st.selectbox("Dado", ["d4","d6","d8","d10","d12","d20","d100"])
-    with c2:
-        qtd = st.number_input("Qtd", 1, 20, 1)
-    with c3:
-        mod = st.number_input("Mod", -10, 20, 0)
-    with c4:
-        motivo = st.text_input("Motivo", placeholder="Ex: Ataque")
+    dado   = st.selectbox("Dado", ["d4", "d6", "d8", "d10", "d12", "d20", "d100"])
+    qtd    = st.number_input("Qtd", 1, 20, 1)
+    mod    = st.number_input("Mod", -10, 20, 0)
+    motivo = st.text_input("Motivo", placeholder="Ex: Ataque")
 
     if st.button("🎲 Rolar!", type="primary", use_container_width=True):
-        lados = int(dado[1:])
+        lados      = int(dado[1:])
         resultados = [random.randint(1, lados) for _ in range(int(qtd))]
-        total = sum(resultados) + int(mod)
-        critico = dado == "d20" and resultados[0] == 20
-        falha   = dado == "d20" and resultados[0] == 1
+        total      = sum(resultados) + int(mod)
+        critico    = dado == "d20" and resultados[0] == 20
+        falha      = dado == "d20" and resultados[0] == 1
 
         nome_personagem = personagem_ativo["nome"] if personagem_ativo else usuario.get("nome", "Anônimo")
-
         client.rolar_dados(
             dado=dado, quantidade=int(qtd), modificador=int(mod),
             ficha_id=personagem_ativo["id"] if personagem_ativo else None,
-            personagem=nome_personagem, motivo=motivo
+            personagem=nome_personagem, motivo=motivo,
         )
 
         if critico:
-            st.success(f"🌟 CRÍTICO! Total: **{total}** ({resultados} +{mod})")
+            st.success(f"🌟 CRÍTICO! **{total}** ({resultados} +{mod})")
         elif falha:
-            st.error(f"💀 FALHA CRÍTICA! Total: **{total}**")
+            st.error(f"💀 FALHA! **{total}**")
         else:
-            st.info(f"🎲 Total: **{total}** ({resultados} +{mod})")
-
-
-def _render_status_mesa(fichas, eh_mestre):
-    """Painel lateral: mestre vê todos, jogador vê só o próprio."""
-    usuario   = st.session_state.get("usuario", {})
-    titulo = "Status dos Personagens" if eh_mestre else "Seu Personagem"
-    st.markdown(f"<div class='hk-section-title'>{titulo}</div>", unsafe_allow_html=True)
-
-    if not eh_mestre:
-        personagem_ativo = st.session_state.get("personagem_ativo")
-        fichas = [f for f in fichas if personagem_ativo and f["id"] == personagem_ativo["id"]]
-
-    for f in fichas[:4]:  # máximo 4 para não poluir
-        status = f.get("status", {})
-        vida_a = status.get("vida", {}).get("atual", f.get("hp_atual", 0))
-        vida_m = status.get("vida", {}).get("maximo", f.get("hp_max", 1))
-
-        st.markdown(f"""
-        <div class='hk-card' style='margin-bottom:6px;padding:8px 10px;'>
-            <div style='font-family:Cinzel,serif;font-size:10px;letter-spacing:.12em;color:#c8b89a;margin-bottom:6px;'>{f['nome'].upper()}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        show_status_bar("vida", vida_a, vida_m)
-        if status.get("mana"):
-            show_status_bar("mana", status["mana"]["atual"], status["mana"]["maximo"])
+            st.info(f"🎲 **{total}** ({resultados} +{mod})")
 
 
 def _render_log():
@@ -220,16 +193,21 @@ def _render_log():
     if not logs:
         st.info("Nenhuma rolagem ainda.")
         return
-    for r in logs[:8]:
+
+    cols = st.columns(4)
+    for idx, r in enumerate(logs[:12]):
         badge = "🌟" if r.get("critico") else "💀" if r.get("falha_critica") else "🎲"
         cor   = "#60d080" if r.get("critico") else "#d06060" if r.get("falha_critica") else "#c8b89a"
-        st.markdown(f"""
-        <div class='hk-card' style='margin-bottom:5px;padding:7px 10px;'>
-            <div style='font-size:10px;color:#5a4a30;'>{badge} {r['personagem']} · {r['dado']} {"· " + r['motivo'] if r.get('motivo') else ''}</div>
-            <div style='font-family:Cinzel,serif;font-size:18px;font-weight:600;color:{cor};'>{r['total']}</div>
-            <div style='font-size:9px;color:#3a3a4a;'>{r.get('hora','')}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        with cols[idx % 4]:
+            st.markdown(f"""
+            <div class='hk-card' style='margin-bottom:5px;padding:7px 10px;'>
+                <div style='font-size:10px;color:#5a4a30;'>{badge} {r['personagem']} · {r['dado']}</div>
+                <div style='font-family:Cinzel,serif;font-size:20px;font-weight:600;color:{cor};'>{r['total']}</div>
+                {'<div style="font-size:9px;color:#6a5a40;">'+r['motivo']+'</div>' if r.get('motivo') else ''}
+                <div style='font-size:9px;color:#3a3a4a;'>{r.get('hora','')}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
     if st.button("🗑️ Limpar log", use_container_width=True):
         client.limpar_log()
         st.rerun()
