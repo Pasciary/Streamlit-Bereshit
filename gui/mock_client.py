@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 
 from gui import mock_data
+from gui.mock_data import STATUS_PADROES
 
 _store = mock_data.seed_store()
 
@@ -73,9 +74,9 @@ def criar_ficha(dados):
     tem_magia = dados["classe"] in [
         "Mago", "Clérigo", "Druida", "Bardo", "Feiticeiro", "Bruxo", "Paladino", "Ranger",
     ]
-    sangue_max  = max(3, hp_max // 5)
-    sanidade_max = max(8, 10 + mods.get("sabedoria", 0))
-    vigor_max    = max(2, 2 + mods.get("constituicao", 0))
+    sangue_max   = max(1, round(hp_max * STATUS_PADROES["sangue"]))
+    sanidade_max = max(1, round(hp_max * STATUS_PADROES["sanidade"]))
+    vigor_max    = max(1, round(hp_max * STATUS_PADROES["vigor"]))
     status_base = {
         "vida":     {"atual": hp_max,      "maximo": hp_max},
         "sangue":   {"atual": sangue_max,  "maximo": sangue_max},
@@ -134,8 +135,8 @@ def atualizar_hp(ficha_id, hp_atual):
 
 def criar_ficha_rapida(nome, hp_max, hp_atual, ca):
     ficha_id = str(uuid.uuid4())[:8]
-    hp_atual = max(0, min(hp_atual, hp_max))
-    sangue_max = max(1, hp_max // 5)
+    hp_atual   = max(0, min(hp_atual, hp_max))
+    sangue_max = max(1, round(hp_max * STATUS_PADROES["sangue"]))
     ficha = {
         "id": ficha_id,
         "nome": nome,
