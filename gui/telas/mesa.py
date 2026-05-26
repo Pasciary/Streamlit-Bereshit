@@ -306,6 +306,7 @@ def _render_iniciar_combate(fichas):
 
 
 def _render_rolagem(usuario, fichas):
+    st.markdown("<div class='hk-section-title'>Rolagem de Dados</div>", unsafe_allow_html=True)
     if st.button("🎲 Rolar Dados", use_container_width=True, type="primary"):
         st.session_state.pop("_show_save_preset", None)
         _modal_rolar_dados(usuario)
