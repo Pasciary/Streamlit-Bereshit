@@ -7,7 +7,8 @@ def mostrar():
     usuario   = st.session_state.get("usuario", {})
     eh_mestre = usuario.get("role") == "mestre"
 
-    dados = client.dashboard()
+    campanha_id = st.session_state.get("campanha_ativa", {}).get("id")
+    dados = client.dashboard(campanha_id=campanha_id)
     if "erro" in dados:
         st.error(dados["erro"])
         return

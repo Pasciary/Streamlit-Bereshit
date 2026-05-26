@@ -49,8 +49,11 @@ def listar_campanhas_usuario(usuario_id):
 
 
 # FICHAS
-def listar_fichas():
-    return list(_store["fichas"].values())
+def listar_fichas(campanha_id=None):
+    fichas = list(_store["fichas"].values())
+    if campanha_id:
+        fichas = [f for f in fichas if f.get("_campanha") == campanha_id]
+    return fichas
 
 
 def buscar_ficha(ficha_id):
@@ -381,8 +384,10 @@ def deletar_nota(nota_id):
 
 
 # DASHBOARD
-def dashboard():
+def dashboard(campanha_id=None):
     fichas = list(_store["fichas"].values())
+    if campanha_id:
+        fichas = [f for f in fichas if f.get("_campanha") == campanha_id]
     logs = _store["log_dados"]
     criticos = sum(1 for l in logs if l.get("critico"))
     falhas = sum(1 for l in logs if l.get("falha_critica"))
