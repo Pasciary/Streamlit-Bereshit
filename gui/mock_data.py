@@ -1,11 +1,8 @@
 """
 Dados fictícios para validar o front sem a API (uvicorn) rodando.
 
-Ative o modo mock em gui/client.py (ENABLE_MOCK = True)
-ou defina a variável de ambiente: RPG_USE_MOCK=1
-
-Para ajustar personagens, campanha e status sem editar Python:
-  edite  gui/mock_config.ini
+Ative o modo mock: ENABLE_MOCK = True aqui, ou RPG_USE_MOCK=1 no ambiente.
+Para ajustar dados sem editar Python, edite: gui/mock_config.ini
 """
 
 import configparser
@@ -53,17 +50,70 @@ def _parse_status(s, key_max, key_at, hp_max, fator):
     return {"atual": vat, "maximo": vmax}
 
 
+# ── parsers por seção ─────────────────────────────────────────────────────────
+
+def _usuarios_do_config(cfg):
+    """[Jogador.X] → dict de usuários keyed by user (login)."""
+    usuarios = {}
+    for section in cfg.sections():
+        if not section.lower().startswith("jogador."):
+            continue
+        s    = cfg[section]
+        user = s.get("user", section.split(".", 1)[1]).strip()
+        usuarios[user] = {
+            "id":       user,
+            "nome":     s.get("nome", user).strip(),
+            "senha":    s.get("senha", "1234").strip(),
+            "role":     s.get("role", "jogador").strip(),
+            "ficha_id": None,   # preenchido depois, ao linkar personagens
+        }
+    return usuarios
+
+
+def _campanhas_do_config(cfg):
+    """[Campanha.X] → dict de campanhas keyed pela chave da seção."""
+    campanhas = {}
+    for section in cfg.sections():
+        if not section.lower().startswith("campanha."):
+            continue
+        key = section.split(".", 1)[1]
+        s   = cfg[section]
+        mestre = s.get("mestre", "").strip()
+        jogs   = [j.strip() for j in s.get("jogadores", "").split(",") if j.strip()]
+
+        membros = [{"usuario_id": mestre, "role": "mestre", "ficha_id": None}]
+        for j in jogs:
+            membros.append({"usuario_id": j, "role": "jogador", "ficha_id": None})
+
+        campanhas[key] = {
+            "id":        key,
+            "nome":      s.get("titulo", key).strip(),
+            "descricao": s.get("descricao", "").strip(),
+            "criado_em": s.get("criado_em", "").strip(),
+            "membros":   membros,
+        }
+    return campanhas
+
+
 def _fichas_do_config(cfg):
+    """
+    [Personagem.X] → fichas dict + lista de links (ficha_id, user, campanha_key).
+    Os links são usados em seed_store() para ligar usuário ↔ campanha ↔ ficha.
+    """
     padroes = _padroes_do_config(cfg)
     fichas  = {}
+    links   = []   # [(ficha_id, user_login, campanha_key)]
+
     for section in cfg.sections():
         if not section.lower().startswith("personagem."):
             continue
         s        = cfg[section]
         ficha_id = s.get("id", "").strip() or section.split(".", 1)[1]
-        hp_max   = int(s.get("vida_maxima", "10").strip() or "10")
+        jogador  = s.get("jogador",  "").strip()
+        campanha = s.get("campanha", "").strip()
 
-        raw_at = s.get("vida_atual", "").strip()
+        hp_max   = int(s.get("vida_maxima", "10").strip() or "10")
+        raw_at   = s.get("vida_atual", "").strip()
         hp_atual = int(raw_at) if raw_at else hp_max
 
         status = {
@@ -78,8 +128,8 @@ def _fichas_do_config(cfg):
                     s, f"{recurso}_maxima", f"{recurso}_atual", hp_max, padroes[recurso]
                 )
 
-        cond_raw   = s.get("condicoes", "").strip()
-        condicoes  = [c.strip() for c in cond_raw.split(",") if c.strip()] if cond_raw else []
+        cond_raw  = s.get("condicoes", "").strip()
+        condicoes = [c.strip() for c in cond_raw.split(",") if c.strip()] if cond_raw else []
 
         def _int(key, default=0):
             try:
@@ -112,13 +162,20 @@ def _fichas_do_config(cfg):
             "condicoes":          condicoes,
             "criado_em":          s.get("criado_em", "").strip(),
             "status":             status,
+            # campos de contexto (não usados pela API, mas úteis na UI)
+            "_jogador":           jogador,
+            "_campanha":          campanha,
         }
-    return fichas
+
+        if jogador:
+            links.append((ficha_id, jogador, campanha))
+
+    return fichas, links
 
 
 def _combate_do_config(cfg, fichas):
     if not cfg.has_section("Combate"):
-        return copy.deepcopy(SESSAO_COMBATE)
+        return {"ativa": False, "rodada": 0, "turno_atual": 0, "iniciativa": []}
 
     s     = cfg["Combate"]
     ativa = s.get("ativa", "false").strip().lower() in ("true", "1", "yes", "sim")
@@ -131,19 +188,19 @@ def _combate_do_config(cfg, fichas):
         except ValueError:
             return default
 
-    rodada    = _int("rodada", 1)
-    turno     = _int("turno_atual", 0)
-    raw       = s.get("participantes", "").strip()
-    por_nome  = {f["nome"]: f for f in fichas.values()}
+    rodada   = _int("rodada", 1)
+    turno    = _int("turno_atual", 0)
+    raw      = s.get("participantes", "").strip()
+    por_nome = {f["nome"]: f for f in fichas.values()}
 
     participantes = []
     for parte in raw.split(","):
         campos = [c.strip() for c in parte.strip().split(":")]
         if len(campos) < 3:
             continue
-        nome, tipo, init = campos[0], campos[1], campos[2]
+        nome, tipo, init_str = campos[0], campos[1], campos[2]
         try:
-            init = int(init)
+            init = int(init_str)
         except ValueError:
             init = 0
         entry = {"nome": nome, "tipo": tipo, "iniciativa": init}
@@ -163,120 +220,26 @@ _cfg = _load_config()
 STATUS_PADROES = _padroes_do_config(_cfg)
 
 
-# ── usuários (hardcoded — senhas não vão para o config) ──────────────────────
-USUARIOS = {
-    "mestre": {
-        "id": "mestre",
-        "nome": "Mestre",
-        "senha": "1234",
-        "role": "mestre",
-        "ficha_id": None,
-    },
-    "jogador1": {
-        "id": "jogador1",
-        "nome": "Jogador 1",
-        "senha": "1234",
-        "role": "jogador",
-        "ficha_id": "a1b2c3d4",
-    },
-    "jogador2": {
-        "id": "jogador2",
-        "nome": "Jogador 2",
-        "senha": "1234",
-        "role": "jogador",
-        "ficha_id": "e5f6g7h8",
-    },
-    "zeny": {
-        "id": "zeny",
-        "nome": "Zeny",
-        "senha": "002502",
-        "role": "mestre",
-        "ficha_id": None,
-    },
-    "duda": {
-        "id": "duda",
-        "nome": "Duda",
-        "senha": "1234",
-        "role": "jogador",
-        "ficha_id": None,
-    },
-    "leo": {
-        "id": "leo",
-        "nome": "Leo",
-        "senha": "1234",
-        "role": "jogador",
-        "ficha_id": None,
-    },
-    "marquinhos": {
-        "id": "marquinhos",
-        "nome": "Marquinhos",
-        "senha": "1234",
-        "role": "jogador",
-        "ficha_id": None,
-    },
-}
-
-# ── campanhas ─────────────────────────────────────────────────────────────────
-def _campanhas_do_config(cfg):
-    if not cfg.has_section("Campanha"):
-        return copy.deepcopy(CAMPANHAS_PADRAO)
-
-    s       = cfg["Campanha"]
-    titulo  = s.get("titulo",    "Campanha").strip()
-    descr   = s.get("descricao", "").strip()
-    mestre  = s.get("mestre",    "mestre").strip()
-    jogs    = [j.strip() for j in s.get("jogadores", "").split(",") if j.strip()]
-
-    membros = [{"usuario_id": mestre, "role": "mestre", "ficha_id": None}]
-    for j in jogs:
-        membros.append({"usuario_id": j, "role": "jogador", "ficha_id": None})
-
-    return {
-        "camp01": {
-            "id": "camp01",
-            "nome": titulo,
-            "descricao": descr,
-            "criado_em": "2026-05-01",
-            "membros": membros,
-        }
-    }
-
-
-CAMPANHAS_PADRAO = {
-    "camp01": {
-        "id": "camp01",
-        "nome": "A Maldição de Ironthorn",
-        "descricao": "Uma maldição ancestral ameaça a cidade mineira de Ironthorn.",
-        "criado_em": "2026-05-01",
-        "membros": [
-            {"usuario_id": "zeny",       "role": "mestre",  "ficha_id": None},
-            {"usuario_id": "duda",       "role": "jogador", "ficha_id": None},
-            {"usuario_id": "leo",        "role": "jogador", "ficha_id": None},
-            {"usuario_id": "marquinhos", "role": "jogador", "ficha_id": None},
-        ],
-    },
-}
-
 # ── catálogos (hardcoded — são dados do sistema de jogo) ─────────────────────
 ITENS_CATALOGO = [
-    {"id": "1", "nome": "Espada Longa",       "tipo": "arma",       "dano": "1d8",   "preco": 15,  "peso": 3,    "descricao": "Arma versátil de uma ou duas mãos"},
-    {"id": "2", "nome": "Arco Curto",          "tipo": "arma",       "dano": "1d6",   "preco": 25,  "peso": 2,    "descricao": "Arco para ataques à distância"},
-    {"id": "3", "nome": "Armadura de Couro",   "tipo": "armadura",   "ca": 11,        "preco": 10,  "peso": 10,   "descricao": "Proteção leve e silenciosa"},
-    {"id": "4", "nome": "Cota de Malha",       "tipo": "armadura",   "ca": 16,        "preco": 75,  "peso": 55,   "descricao": "Armadura média resistente"},
-    {"id": "5", "nome": "Poção de Cura",       "tipo": "consumivel", "efeito": "2d4+2 HP", "preco": 50, "peso": 0.5, "descricao": "Restaura pontos de vida"},
-    {"id": "6", "nome": "Tocha",               "tipo": "equipamento","preco": 1,  "peso": 1,  "descricao": "Ilumina 6m por 1 hora"},
-    {"id": "7", "nome": "Corda (15m)",         "tipo": "equipamento","preco": 1,  "peso": 10, "descricao": "Corda resistente de cânhamo"},
-    {"id": "8", "nome": "Grimório",            "tipo": "equipamento","preco": 50, "peso": 3,  "descricao": "Livro de magias do mago"},
+    {"id": "1", "nome": "Espada Longa",       "tipo": "arma",       "dano": "1d8",        "preco": 15,  "peso": 3,   "descricao": "Arma versátil de uma ou duas mãos"},
+    {"id": "2", "nome": "Arco Curto",          "tipo": "arma",       "dano": "1d6",        "preco": 25,  "peso": 2,   "descricao": "Arco para ataques à distância"},
+    {"id": "3", "nome": "Armadura de Couro",   "tipo": "armadura",   "ca": 11,             "preco": 10,  "peso": 10,  "descricao": "Proteção leve e silenciosa"},
+    {"id": "4", "nome": "Cota de Malha",       "tipo": "armadura",   "ca": 16,             "preco": 75,  "peso": 55,  "descricao": "Armadura média resistente"},
+    {"id": "5", "nome": "Poção de Cura",       "tipo": "consumivel", "efeito": "2d4+2 HP", "preco": 50,  "peso": 0.5, "descricao": "Restaura pontos de vida"},
+    {"id": "6", "nome": "Tocha",               "tipo": "equipamento","preco": 1,  "peso": 1,   "descricao": "Ilumina 6m por 1 hora"},
+    {"id": "7", "nome": "Corda (15m)",         "tipo": "equipamento","preco": 1,  "peso": 10,  "descricao": "Corda resistente de cânhamo"},
+    {"id": "8", "nome": "Grimório",            "tipo": "equipamento","preco": 50, "peso": 3,   "descricao": "Livro de magias do mago"},
 ]
 
 MAGIAS_CATALOGO = [
-    {"id": "1", "nome": "Míssil Mágico",    "nivel": 1, "escola": "Evocação",      "alcance": "18m",   "componentes": "V, S",    "duracao": "Instantâneo", "descricao": "3 dardos de força causando 1d4+1 cada"},
-    {"id": "2", "nome": "Bola de Fogo",     "nivel": 3, "escola": "Evocação",      "alcance": "45m",   "componentes": "V, S, M", "duracao": "Instantâneo", "descricao": "Explosão de 8d6 de dano de fogo em raio de 6m"},
-    {"id": "3", "nome": "Curar Ferimentos", "nivel": 1, "escola": "Evocação",      "alcance": "Toque", "componentes": "V, S",    "duracao": "Instantâneo", "descricao": "Restaura 1d8 + mod Sabedoria de HP"},
-    {"id": "4", "nome": "Escudo",           "nivel": 1, "escola": "Abjuração",     "alcance": "Pessoal","componentes": "V, S",   "duracao": "1 rodada",    "descricao": "+5 CA como reação"},
-    {"id": "5", "nome": "Sono",             "nivel": 1, "escola": "Encantamento",  "alcance": "27m",   "componentes": "V, S, M", "duracao": "1 minuto",    "descricao": "Adormece criaturas com até 5d8 HP"},
-    {"id": "6", "nome": "Luz",              "nivel": 0, "escola": "Evocação",      "alcance": "Toque", "componentes": "V, M",    "duracao": "1 hora",      "descricao": "Objeto emite luz por 6m"},
-    {"id": "7", "nome": "Prestidigitação",  "nivel": 0, "escola": "Transmutação",  "alcance": "3m",    "componentes": "V, S",    "duracao": "Até 1 hora",  "descricao": "Efeitos mágicos menores variados"},
+    {"id": "1", "nome": "Míssil Mágico",    "nivel": 1, "escola": "Evocação",     "alcance": "18m",    "componentes": "V, S",    "duracao": "Instantâneo", "descricao": "3 dardos de força causando 1d4+1 cada"},
+    {"id": "2", "nome": "Bola de Fogo",     "nivel": 3, "escola": "Evocação",     "alcance": "45m",    "componentes": "V, S, M", "duracao": "Instantâneo", "descricao": "Explosão de 8d6 de dano de fogo em raio de 6m"},
+    {"id": "3", "nome": "Curar Ferimentos", "nivel": 1, "escola": "Evocação",     "alcance": "Toque",  "componentes": "V, S",    "duracao": "Instantâneo", "descricao": "Restaura 1d8 + mod Sabedoria de HP"},
+    {"id": "4", "nome": "Escudo",           "nivel": 1, "escola": "Abjuração",    "alcance": "Pessoal","componentes": "V, S",    "duracao": "1 rodada",    "descricao": "+5 CA como reação"},
+    {"id": "5", "nome": "Sono",             "nivel": 1, "escola": "Encantamento", "alcance": "27m",    "componentes": "V, S, M", "duracao": "1 minuto",    "descricao": "Adormece criaturas com até 5d8 HP"},
+    {"id": "6", "nome": "Luz",              "nivel": 0, "escola": "Evocação",     "alcance": "Toque",  "componentes": "V, M",    "duracao": "1 hora",      "descricao": "Objeto emite luz por 6m"},
+    {"id": "7", "nome": "Prestidigitação",  "nivel": 0, "escola": "Transmutação", "alcance": "3m",     "componentes": "V, S",    "duracao": "Até 1 hora",  "descricao": "Efeitos mágicos menores variados"},
 ]
 
 MONSTROS_CATALOGO = [
@@ -288,48 +251,12 @@ MONSTROS_CATALOGO = [
     {"id": "6", "nome": "Dragão Jovem", "hp": 178, "ca": 18, "ataque": "+10", "dano": "2d10+6", "cr": "10",  "xp": 5900},
 ]
 
-# ── inventários / magias (hardcoded, vinculados por ficha_id fixo) ───────────
-INVENTARIOS = {
-    "a1b2c3d4": [
-        {"id": "inv01", "nome": "Espada Longa",   "quantidade": 1, "descricao": "Arma principal",   "tipo": "arma"},
-        {"id": "inv02", "nome": "Cota de Malha",  "quantidade": 1, "descricao": "Armadura equipada","tipo": "armadura"},
-        {"id": "inv03", "nome": "Poção de Cura",  "quantidade": 2, "descricao": "2d4+2 HP",         "tipo": "consumivel"},
-    ],
-    "e5f6g7h8": [
-        {"id": "inv04", "nome": "Grimório",            "quantidade": 1, "descricao": "Livro de magias",       "tipo": "equipamento"},
-        {"id": "inv05", "nome": "Componentes arcanos", "quantidade": 1, "descricao": "Bolsa de componentes",  "tipo": "equipamento"},
-    ],
-    "i9j0k1l2": [
-        {"id": "inv06", "nome": "Adaga",                 "quantidade": 2, "descricao": "Par de adagas", "tipo": "arma"},
-        {"id": "inv07", "nome": "Ferramentas de ladrão", "quantidade": 1, "descricao": "",              "tipo": "equipamento"},
-    ],
-}
-
-MAGIAS_CONHECIDAS_PADRAO = {
-    "e5f6g7h8": [MAGIAS_CATALOGO[0], MAGIAS_CATALOGO[2], MAGIAS_CATALOGO[3], MAGIAS_CATALOGO[5]],
-    "a1b2c3d4": [],
-    "i9j0k1l2": [],
-}
-
 LOG_DADOS = [
-    {"id": "r001", "ficha_id": "a1b2c3d4", "personagem": "Thorn Hollow",    "dado": "d20", "quantidade": 1, "resultados": [20], "modificador": 5, "total": 25, "motivo": "Ataque com espada",        "critico": True,  "falha_critica": False, "hora": "15:10:02"},
-    {"id": "r002", "ficha_id": "e5f6g7h8", "personagem": "Lyra Nocturne",   "dado": "d20", "quantidade": 1, "resultados": [1],  "modificador": 3, "total": 4,  "motivo": "Salvaguarda de Destreza",  "critico": False, "falha_critica": True,  "hora": "15:11:44"},
-    {"id": "r003", "ficha_id": None,        "personagem": "Mestre",          "dado": "d6",  "quantidade": 2, "resultados": [4, 6], "modificador": 0, "total": 10, "motivo": "Dano do Goblin",         "critico": False, "falha_critica": False, "hora": "15:12:30"},
-    {"id": "r004", "ficha_id": "i9j0k1l2", "personagem": "Silas Quickfinger","dado": "d20", "quantidade": 1, "resultados": [14], "modificador": 7, "total": 21, "motivo": "Furtividade",             "critico": False, "falha_critica": False, "hora": "15:14:08"},
-    {"id": "r005", "ficha_id": "a1b2c3d4", "personagem": "Thorn Hollow",    "dado": "d8",  "quantidade": 1, "resultados": [6],  "modificador": 3, "total": 9,  "motivo": "Dano da espada",           "critico": False, "falha_critica": False, "hora": "15:15:22"},
+    {"id": "r001", "ficha_id": "a1b1c1d1", "personagem": "Thorn Hollow",  "dado": "d20", "quantidade": 1, "resultados": [20],   "modificador": 5, "total": 25, "motivo": "Ataque com espada",       "critico": True,  "falha_critica": False, "hora": "15:10:02"},
+    {"id": "r002", "ficha_id": "a2b2c2d2", "personagem": "Layla Jinx",    "dado": "d20", "quantidade": 1, "resultados": [1],    "modificador": 3, "total": 4,  "motivo": "Salvaguarda de Destreza", "critico": False, "falha_critica": True,  "hora": "15:11:44"},
+    {"id": "r003", "ficha_id": None,        "personagem": "Mestre",        "dado": "d6",  "quantidade": 2, "resultados": [4, 6], "modificador": 0, "total": 10, "motivo": "Dano do Goblin",          "critico": False, "falha_critica": False, "hora": "15:12:30"},
+    {"id": "r004", "ficha_id": "a1b1c1d1", "personagem": "Thorn Hollow",  "dado": "d8",  "quantidade": 1, "resultados": [6],    "modificador": 3, "total": 9,  "motivo": "Dano da espada",          "critico": False, "falha_critica": False, "hora": "15:15:22"},
 ]
-
-SESSAO_COMBATE = {
-    "ativa": True,
-    "rodada": 2,
-    "turno_atual": 1,
-    "iniciativa": [
-        {"nome": "Lyra Nocturne",    "iniciativa": 18, "tipo": "jogador", "hp": 18, "hp_max": 18},
-        {"nome": "Thorn Hollow",     "iniciativa": 14, "tipo": "jogador", "hp": 19, "hp_max": 28},
-        {"nome": "Goblin",           "iniciativa": 12, "tipo": "monstro", "hp": 4,  "hp_max": 7},
-        {"nome": "Silas Quickfinger","iniciativa": 9,  "tipo": "jogador", "hp": 11, "hp_max": 16},
-    ],
-}
 
 NOTAS = [
     {
@@ -345,25 +272,33 @@ NOTAS = [
 # ── seed_store ────────────────────────────────────────────────────────────────
 
 def seed_store():
-    """Retorna o estado inicial mutável lido do mock_config.ini (ou fallback hardcoded)."""
+    """Estado inicial mutável lido do mock_config.ini (fallback hardcoded vazio)."""
     cfg = _load_config()
 
-    # fichas: config-driven se houver seções [Personagem.X]
-    fichas_cfg = _fichas_do_config(cfg)
-    fichas     = fichas_cfg if fichas_cfg else {}
+    usuarios  = _usuarios_do_config(cfg)
+    campanhas = _campanhas_do_config(cfg)
+    fichas, links = _fichas_do_config(cfg)
 
-    # inventários: usa hardcoded se o ficha_id existir; caso contrário, vazio
-    inventarios = {}
-    magias_conhecidas = {}
-    for fid in fichas:
-        inventarios[fid]       = copy.deepcopy(INVENTARIOS.get(fid, []))
-        magias_conhecidas[fid] = copy.deepcopy(MAGIAS_CONHECIDAS_PADRAO.get(fid, []))
+    # ── liga usuário ↔ ficha e campanha ↔ membro ─────────────────────────────
+    for ficha_id, user_login, campanha_key in links:
+        # usuario.ficha_id = primeira ficha do usuário (para o dashboard)
+        if user_login in usuarios and usuarios[user_login]["ficha_id"] is None:
+            usuarios[user_login]["ficha_id"] = ficha_id
+
+        # membro da campanha recebe o ficha_id
+        if campanha_key in campanhas:
+            for membro in campanhas[campanha_key]["membros"]:
+                if membro["usuario_id"] == user_login and membro["ficha_id"] is None:
+                    membro["ficha_id"] = ficha_id
 
     combate = _combate_do_config(cfg, fichas)
-    campanhas = _campanhas_do_config(cfg)
+
+    # inventários e magias: sem entrada no config por ora — iniciam vazios
+    inventarios       = {fid: [] for fid in fichas}
+    magias_conhecidas = {fid: [] for fid in fichas}
 
     return {
-        "usuarios":          copy.deepcopy(USUARIOS),
+        "usuarios":          usuarios,
         "campanhas":         campanhas,
         "fichas":            fichas,
         "inventarios":       inventarios,
