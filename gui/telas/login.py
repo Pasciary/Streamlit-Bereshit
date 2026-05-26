@@ -1,6 +1,7 @@
 import streamlit as st
 
 from gui import client
+from gui import mock_data
 
 def mostrar():
     st.markdown("""
@@ -28,8 +29,10 @@ def mostrar():
                 st.session_state.tela     = "dashboard"
                 st.rerun()
 
-        st.markdown("""
-        <div style='text-align:center;margin-top:12px;font-size:11px;color:#3a3a5a;'>
-            💡 mestre / 1234 &nbsp;·&nbsp; jogador1 / 1234
-        </div>
-        """, unsafe_allow_html=True)
+        hint = mock_data.hints_login()
+        st.markdown(
+            "<div style='text-align:center;margin-top:12px;font-size:11px;color:#3a3a5a;'>"
+            "💡 " + hint
+            + "</div>",
+            unsafe_allow_html=True,
+        )
