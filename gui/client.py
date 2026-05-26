@@ -64,8 +64,8 @@ else:
             return _post("/auth/login", {"usuario": usuario, "senha": senha})
 
         @staticmethod
-        def listar_fichas():
-            return _get("/fichas")
+        def listar_fichas(campanha_id=None):
+            return _get("/fichas", params={"campanha_id": campanha_id} if campanha_id else None)
 
         @staticmethod
         def buscar_ficha(ficha_id):
@@ -187,8 +187,8 @@ else:
             return _delete(f"/notas/{nota_id}")
 
         @staticmethod
-        def dashboard():
-            return _get("/dashboard")
+        def dashboard(campanha_id=None):
+            return _get("/dashboard", params={"campanha_id": campanha_id} if campanha_id else None)
 
         @staticmethod
         def personagem_ativo_turno():

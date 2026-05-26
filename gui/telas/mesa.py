@@ -178,9 +178,10 @@ def mostrar():
         if st.button("🔄 Atualizar", use_container_width=True):
             st.rerun()
 
-    combate = client.estado_combate()
-    ativo   = client.personagem_ativo_turno()
-    fichas  = client.listar_fichas()
+    combate     = client.estado_combate()
+    ativo       = client.personagem_ativo_turno()
+    campanha_id = st.session_state.get("campanha_ativa", {}).get("id")
+    fichas      = client.listar_fichas(campanha_id=campanha_id)
 
     col_esq, col_dir = st.columns([2, 2])
 

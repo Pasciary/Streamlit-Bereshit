@@ -35,7 +35,8 @@ def _listar_fichas(eh_mestre, usuario):
         if st.button("🔄", use_container_width=True):
             st.rerun()
 
-    fichas = client.listar_fichas()
+    campanha_id = st.session_state.get("campanha_ativa", {}).get("id")
+    fichas = client.listar_fichas(campanha_id=campanha_id)
     if isinstance(fichas, dict) and "erro" in fichas:
         st.error(fichas["erro"])
         return
