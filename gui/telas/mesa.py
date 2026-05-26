@@ -176,12 +176,7 @@ def mostrar():
     campanha_id = st.session_state.get("campanha_ativa", {}).get("id")
     fichas      = client.listar_fichas(campanha_id=campanha_id)
 
-    c1, c2 = st.columns([5, 1])
-    with c1:
-        st.subheader("🎲 Mesa de Jogo")
-    with c2:
-        if st.button("🔄", use_container_width=True, help="Atualizar"):
-            st.rerun()
+    st.subheader("🎲 Mesa de Jogo")
 
     col_esq, col_dir = st.columns(2)
 
@@ -317,7 +312,12 @@ def _render_rolagem(usuario, fichas):
 
 
 def _render_log():
-    st.markdown("<div class='hk-section-title'>Últimas Rolagens</div>", unsafe_allow_html=True)
+    lg1, lg2 = st.columns([5, 1])
+    with lg1:
+        st.markdown("<div class='hk-section-title'>Últimas Rolagens</div>", unsafe_allow_html=True)
+    with lg2:
+        if st.button("🔄", use_container_width=True, help="Atualizar", key="mesa_refresh"):
+            st.rerun()
     logs = client.log_dados()
     if not logs:
         st.info("Nenhuma rolagem ainda.")
