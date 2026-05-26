@@ -171,21 +171,15 @@ def mostrar():
     usuario   = st.session_state.get("usuario", {})
     eh_mestre = usuario.get("role") == "mestre"
 
-    c1, c2 = st.columns([5, 1])
-    with c1:
-        st.title("🎲 Mesa de Jogo")
-    with c2:
-        if st.button("🔄 Atualizar", use_container_width=True):
-            st.rerun()
-
     combate     = client.estado_combate()
     ativo       = client.personagem_ativo_turno()
     campanha_id = st.session_state.get("campanha_ativa", {}).get("id")
     fichas      = client.listar_fichas(campanha_id=campanha_id)
 
-    col_esq, col_dir = st.columns([2, 2])
+    col_esq, col_dir = st.columns(2)
 
     with col_esq:
+        st.subheader("🎲 Mesa de Jogo")
         _render_personagem_ativo(ativo, fichas)
         st.divider()
         if combate.get("ativa"):
@@ -197,6 +191,10 @@ def mostrar():
                 st.info("Aguardando o mestre iniciar o combate...")
 
     with col_dir:
+        hc1, hc2 = st.columns([5, 1])
+        with hc2:
+            if st.button("🔄", use_container_width=True, help="Atualizar"):
+                st.rerun()
         _render_rolagem(usuario, fichas)
         st.divider()
         _render_log()
