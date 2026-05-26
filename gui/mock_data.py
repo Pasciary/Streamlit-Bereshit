@@ -53,7 +53,9 @@ def _parse_status(s, key_max, key_at, hp_max, fator):
 # ── parsers por seção ─────────────────────────────────────────────────────────
 
 def _usuarios_do_config(cfg):
-    """[Jogador.X] → dict de usuários keyed by user (login)."""
+    """[Jogador.X] → dict de usuários keyed by user (login).
+    role é opcional: quem for mestre em alguma campanha é promovido em seed_store().
+    """
     usuarios = {}
     for section in cfg.sections():
         if not section.lower().startswith("jogador."):
@@ -68,6 +70,23 @@ def _usuarios_do_config(cfg):
             "ficha_id": None,   # preenchido depois, ao linkar personagens
         }
     return usuarios
+
+
+def hints_login(cfg=None):
+    """Retorna string com até 3 users/senhas para o hint de login."""
+    if cfg is None:
+        cfg = _load_config()
+    pares = []
+    for section in cfg.sections():
+        if not section.lower().startswith("jogador."):
+            continue
+        s    = cfg[section]
+        user = s.get("user", section.split(".", 1)[1]).strip()
+        pwd  = s.get("senha", "1234").strip()
+        pares.append(f"{user} / {pwd}")
+        if len(pares) == 3:
+            break
+    return " · ".join(pares) if pares else "mestre / 1234"
 
 
 def _campanhas_do_config(cfg):
@@ -278,6 +297,13 @@ def seed_store():
     usuarios  = _usuarios_do_config(cfg)
     campanhas = _campanhas_do_config(cfg)
     fichas, links = _fichas_do_config(cfg)
+
+    # ── auto-detecta mestre: quem for mestre em qualquer campanha → role=mestre
+    for campanha in campanhas.values():
+        for membro in campanha["membros"]:
+            uid = membro["usuario_id"]
+            if membro["role"] == "mestre" and uid in usuarios:
+                usuarios[uid]["role"] = "mestre"
 
     # ── liga usuário ↔ ficha e campanha ↔ membro ─────────────────────────────
     for ficha_id, user_login, campanha_key in links:
