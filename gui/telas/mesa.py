@@ -176,15 +176,12 @@ def mostrar():
     campanha_id = st.session_state.get("campanha_ativa", {}).get("id")
     fichas      = client.listar_fichas(campanha_id=campanha_id)
 
-    # cabeçalho com split igual ao das colunas de conteúdo (1:1)
-    hdr_esq, hdr_dir = st.columns(2)
-    with hdr_esq:
+    c1, c2 = st.columns([5, 1])
+    with c1:
         st.subheader("🎲 Mesa de Jogo")
-    with hdr_dir:
-        _, btn_col = st.columns([5, 1])
-        with btn_col:
-            if st.button("🔄", use_container_width=True, help="Atualizar"):
-                st.rerun()
+    with c2:
+        if st.button("🔄", use_container_width=True, help="Atualizar"):
+            st.rerun()
 
     col_esq, col_dir = st.columns(2)
 
